@@ -1,6 +1,22 @@
 # Todo Full-Stack Application
 
-A modern todo application with a Node.js TypeScript backend and React TypeScript frontend.
+A modern full-stack **todo application** with a Node.js TypeScript backend and a React TypeScript frontend.
+
+This repository is a **personal pet project** created for learning and experimenting with modern full-stack technologies.
+
+---
+
+## 🎯 Project Goals
+
+The main goals of this project are to:
+
+- Practice real-world full-stack development
+- Improve TypeScript usage on both frontend and backend
+- Experiment with architecture, tooling, and best practices
+- Gradually refactor and enhance the codebase as new concepts are learned
+- Use the project as a long-term learning playground rather than a production-ready app
+
+---
 
 ## Project Structure
 
