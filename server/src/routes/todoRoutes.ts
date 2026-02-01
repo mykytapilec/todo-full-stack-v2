@@ -29,6 +29,7 @@ export const createTodoRoutes = (): Router => {
 
   // router.delete('/:id', todoController.deleteTodo);
 
+  router.post('/search', todoController.searchTodos);
 
   return router;
 };

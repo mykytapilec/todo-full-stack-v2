@@ -1,6 +1,6 @@
 import { Request, Response } from 'express';
 import { TodoService } from '../services/todoService';
-import { CreateTodoRequest, UpdateTodoRequest, ApiTodo } from '../../../client/src/types/api';
+import { CreateTodoRequest, UpdateTodoRequest, ApiTodo } from '@shared/types/api';
 import { InternalUpdateTodoRequest, Todo } from '../types/todo';
 import { AppError, createValidationError } from '../types/errors';
 
@@ -176,4 +176,17 @@ export class TodoController {
       this.handleError(res, result.error);
     }
   };
+
+  searchTodos = async (req: Request, res: Response): Promise<void> => {
+    const { query, status } = req.body;
+
+    const result = await this.todoService.searchTodos({ query, status });
+
+    if (result.isOk()) {
+      res.json(this.todosToApiTodos(result.value));
+    } else {
+      this.handleError(res, result.error);
+    }
+  };
+
 }

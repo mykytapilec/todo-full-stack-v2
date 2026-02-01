@@ -1,9 +1,14 @@
 {
-  "extends": ["@tsconfig/node22/tsconfig.json", "@tsconfig/strictest/tsconfig.json"],
+  "extends": "../tsconfig.base.json",
   "compilerOptions": {
-    "outDir": "./dist",
-    "types": ["node", "vitest/globals"],
-    "resolveJsonModule": true
+    "target": "ES2022",
+    "module": "Node16",
+    "rootDir": "../",
+    "outDir": "dist",
+    "resolveJsonModule": true,
+    "moduleResolution": "Node16",
+    "types": ["node", "vitest/globals"]
   },
-  "include": ["src/**/*", "tests/**/*", "../client/src/types/api.ts"]
+  "include": ["src/**/*", "../shared/**/*"],
+  "exclude": ["node_modules", "dist"]
 }

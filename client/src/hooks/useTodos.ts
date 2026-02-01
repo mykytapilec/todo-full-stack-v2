@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { CreateTodoRequest, UpdateTodoRequest, FilterType, ApiTodo } from '@shared/types/api';
 import { todoApi } from '../api/todoApi';
-import { CreateTodoRequest, UpdateTodoRequest, FilterType } from '../types/api';
 
 // Query keys
 const QUERY_KEYS = {
@@ -77,3 +77,25 @@ export const useDeleteTodo = () => {
     },
   });
 };
+
+type SearchTodosParams = {
+  query?: string;
+  status?: 'pending' | 'completed';
+};
+
+export const useSearchTodos = ({ query, status }: SearchTodosParams) => {
+  const hasQuery = Boolean(query && query.trim().length > 0);
+
+  return useQuery({
+    queryKey: ['todos', 'search', query, status],
+    queryFn: () =>
+      todoApi.searchTodos({
+        query: query?.trim(),
+        status,
+      }),
+    enabled: hasQuery,
+    staleTime: 1000 * 60,
+  });
+};
+
+

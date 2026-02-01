@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useUpdateTodo, useDeleteTodo } from '../hooks/useTodos';
-import { ApiTodo } from '../types/api';
+import { ApiTodo } from '@shared/types/api';
 
 interface TodoItemProps {
   todo: ApiTodo;

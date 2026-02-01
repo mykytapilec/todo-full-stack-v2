@@ -1,11 +1,14 @@
-import { FilterType } from '../types/api';
+import { FilterType } from '@shared/types/api';
 
 interface TodoFilterProps {
   currentFilter: FilterType;
   onFilterChange: (filter: FilterType) => void;
 }
 
-const TodoFilter: React.FC<TodoFilterProps> = ({ currentFilter, onFilterChange }) => {
+const TodoFilter: React.FC<TodoFilterProps> = ({
+  currentFilter,
+  onFilterChange,
+}) => {
   const filters: { value: FilterType; label: string }[] = [
     { value: 'all', label: 'All' },
     { value: 'pending', label: 'Pending' },
@@ -20,7 +23,9 @@ const TodoFilter: React.FC<TodoFilterProps> = ({ currentFilter, onFilterChange }
           <button
             key={filter.value}
             onClick={() => onFilterChange(filter.value)}
-            className={`filter-btn ${currentFilter === filter.value ? 'active' : ''}`}
+            className={`filter-btn ${
+              currentFilter === filter.value ? 'active' : ''
+            }`}
           >
             {filter.label}
           </button>

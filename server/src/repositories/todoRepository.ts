@@ -2,7 +2,7 @@ import { Collection, Db } from 'mongodb';
 import { Result, ok, err } from 'neverthrow';
 import { randomUUID } from 'crypto';
 import { Todo, InternalUpdateTodoRequest } from '../types/todo';
-import { CreateTodoRequest } from '../../../client/src/types/api';
+import { CreateTodoRequest } from '@shared/types/api';
 import { AppError, createDatabaseError, createNotFoundError } from '../types/errors';
 
 // Common base type for all todo documents
@@ -167,4 +167,32 @@ export class TodoRepository {
       return err(createDatabaseError('Failed to delete todo', error));
     }
   }
+
+  async searchTodos(
+    payload: { query?: string; status?: 'pending' | 'completed' }
+  ): Promise<Result<Todo[], AppError>> {
+    try {
+      const { query, status } = payload;
+
+      const filter: any = { status: { $ne: 'deleted' } };
+
+      if (status) {
+        filter.status = status;
+      }
+
+      if (query) {
+        filter.$or = [
+          { title: { $regex: query, $options: 'i' } },
+          { description: { $regex: query, $options: 'i' } },
+        ];
+      }
+
+      const docs = await this.collection.find(filter).sort({ createdAt: -1 }).toArray();
+
+      return ok(docs.map((doc) => this.documentToTodo(doc)));
+    } catch (error) {
+      return err(createDatabaseError('Failed to search todos', error));
+    }
+  }
+
 }

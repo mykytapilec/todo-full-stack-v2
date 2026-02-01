@@ -204,6 +204,33 @@ body {
   color: white;
 }
 
+/* Search + Filter wrapper */
+.todo-search-filter {
+  margin: 1.5rem 2rem;
+  padding: 1.25rem 1.5rem;
+  border: 1px solid #e6ebf0;
+  border-radius: 12px;
+  background: white;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.todo-search-input {
+  font-size: 1rem;
+  padding: 0.75rem;
+  border: 2px solid #d4dbe3;
+  border-radius: 8px;
+  transition: border-color 0.3s ease;
+  color: #1a1a1a;
+}
+
+.todo-search-input:focus {
+  outline: none;
+  border-color: #0070f3;
+  box-shadow: 0 0 0 3px rgba(0, 112, 243, 0.1);
+}
+
 /* Todo List */
 .todo-list {
   padding: 2rem;
@@ -369,47 +396,57 @@ body {
   .app-header h1 {
     font-size: 2rem;
   }
-  
+
   .app-main {
     padding: 1rem;
   }
-  
+
   .todo-form {
     padding: 1.5rem;
   }
-  
+
   .todo-filter {
     padding: 1rem 1.5rem;
     flex-direction: column;
     align-items: flex-start;
     gap: 0.75rem;
   }
-  
+
+  .todo-search-filter {
+    margin: 1rem;
+    padding: 1rem;
+  }
+
+  .todo-search-input {
+    width: 100%;
+    margin: 0;
+  }
+
   .todo-list {
     padding: 1.5rem;
   }
-  
+
   .todo-item {
     padding: 1rem;
   }
-  
+
   .todo-header {
     flex-direction: column;
     align-items: stretch;
     gap: 1rem;
   }
-  
+
   .todo-actions {
     justify-content: center;
     flex-wrap: wrap;
   }
-  
+
   .todo-meta {
     flex-direction: column;
     align-items: stretch;
     gap: 0.5rem;
   }
-  
+
   .todo-dates {
     text-align: left;
   }

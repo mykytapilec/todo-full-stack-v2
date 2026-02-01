@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { ApiTodo, CreateTodoRequest, UpdateTodoRequest } from '../types/api';
+import { ApiTodo, CreateTodoRequest, UpdateTodoRequest } from '@shared/types/api';
 
 const API_BASE_URL = '/api/todos';
 
@@ -48,12 +48,19 @@ export const todoApi = {
   },
 
   // Delete todo
+  // deleteTodo: async (id: string): Promise<void> => {
+  //   await api.delete(`/${id}`);
+  // },
+
+   // Soft delete todo
   deleteTodo: async (id: string): Promise<void> => {
-    await api.delete(`/${id}`);
+    await api.put(`/${id}/delete`);
   },
 
-  //  // Soft delete todo
-  // deleteTodo: async (id: string): Promise<void> => {
-  //   await api.put(`/${id}/delete`);
-  // },
+  searchTodos: async (
+    payload: { query?: string; status?: 'pending' | 'completed' }
+  ): Promise<ApiTodo[]> => {
+    const response = await api.post<ApiTodo[]>('/search', payload);
+    return response.data;
+  },
 };

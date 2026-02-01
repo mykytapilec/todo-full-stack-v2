@@ -1,6 +1,6 @@
 import { err, ok, Result } from 'neverthrow';
 import { Todo, InternalUpdateTodoRequest } from '../types/todo';
-import { CreateTodoRequest } from '../../../client/src/types/api';
+import { CreateTodoRequest } from '@shared/types/api';
 import { TodoRepository } from '../repositories/todoRepository';
 import { AppError } from '../types/errors';
 
@@ -44,4 +44,11 @@ export class TodoService {
     const filteredTodos = allTodosResult.value.filter((todo) => todo.status === 'pending');
     return ok(filteredTodos);
   }
+
+  async searchTodos(
+    payload: { query?: string; status?: 'pending' | 'completed' }
+  ): Promise<Result<Todo[], AppError>> {
+    return await this.todoRepository.searchTodos(payload);
+  }
+
 }

@@ -20,7 +20,10 @@ export class TodoApplication {
 
   private setupMiddleware(): void {
     // CORS middleware
-    this.app.use(cors());
+    this.app.use(cors({
+      origin: 'http://localhost:3000',
+      methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    }));
 
     // JSON parsing middleware
     this.app.use(express.json());
