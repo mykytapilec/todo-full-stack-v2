@@ -36,15 +36,13 @@ function App() {
 
             {/* 🔍 Search + Filter block */}
             <div className="todo-search-filter">
-             
-
               <TodoFilter
                 currentFilter={filter}
                 onFilterChange={setFilter}
               />
-               <input
+              <input
                 type="text"
-                placeholder="Search todos..."
+                placeholder="Enter todo title"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="form-input todo-search-input"

@@ -107,13 +107,13 @@ describe('todoApi', () => {
   });
 
   describe('deleteTodo', () => {
-    it('deletes todo successfully', async () => {
+    it('soft deletes todo successfully', async () => {
       const todoId = mockTodos[0].id;
-      mockAxiosInstance.delete.mockResolvedValue({ data: undefined });
+      mockAxiosInstance.put.mockResolvedValue({ data: undefined });
 
       await todoApi.deleteTodo(todoId);
 
-      expect(mockAxiosInstance.delete).toHaveBeenCalledWith(`/${todoId}`);
+      expect(mockAxiosInstance.put).toHaveBeenCalledWith(`/${todoId}/delete`);
     });
   });
 
