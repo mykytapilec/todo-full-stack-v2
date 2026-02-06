@@ -1,54 +1,33 @@
-import { err, ok, Result } from 'neverthrow';
+import { Result } from 'neverthrow';
+import { TodoRepository } from '../repositories/todoRepository';
 import { Todo, InternalUpdateTodoRequest } from '../types/todo';
 import { CreateTodoRequest } from '@shared/types/api';
-import { TodoRepository } from '../repositories/todoRepository';
 import { AppError } from '../types/errors';
 
 export class TodoService {
-  constructor(private todoRepository: TodoRepository) {}
+  constructor(private repo: TodoRepository) {}
 
   async getAllTodos(): Promise<Result<Todo[], AppError>> {
-    return await this.todoRepository.findAll();
+    return this.repo.findAll();
   }
 
   async getTodoById(id: string): Promise<Result<Todo, AppError>> {
-    return await this.todoRepository.findById(id);
+    return this.repo.findById(id);
   }
 
-  async createTodo(todoData: CreateTodoRequest): Promise<Result<Todo, AppError>> {
-    return await this.todoRepository.create(todoData);
+  async createTodo(payload: CreateTodoRequest): Promise<Result<Todo, AppError>> {
+    return this.repo.create(payload);
   }
 
   async updateTodo(id: string, updates: InternalUpdateTodoRequest): Promise<Result<Todo, AppError>> {
-    return await this.todoRepository.update(id, updates);
+    return this.repo.update(id, updates);
   }
 
   async deleteTodo(id: string): Promise<Result<boolean, AppError>> {
-    return await this.todoRepository.delete(id);
+    return this.repo.delete(id);
   }
 
-  async getCompletedTodos(): Promise<Result<Todo[], AppError>> {
-    const allTodosResult = await this.todoRepository.findAll();
-    if (allTodosResult.isErr()) {
-      return err(allTodosResult.error);
-    }
-    const filteredTodos = allTodosResult.value.filter((todo) => todo.status === 'completed');
-    return ok(filteredTodos);
+  async filter(payload: { query?: string; status?: 'pending' | 'completed' }): Promise<Result<Todo[], AppError>> {
+    return this.repo.filter(payload);
   }
-
-  async getPendingTodos(): Promise<Result<Todo[], AppError>> {
-    const allTodosResult = await this.todoRepository.findAll();
-    if (allTodosResult.isErr()) {
-      return err(allTodosResult.error);
-    }
-    const filteredTodos = allTodosResult.value.filter((todo) => todo.status === 'pending');
-    return ok(filteredTodos);
-  }
-
-  async searchTodos(
-    payload: { query?: string; status?: 'pending' | 'completed' }
-  ): Promise<Result<Todo[], AppError>> {
-    return await this.todoRepository.searchTodos(payload);
-  }
-
 }

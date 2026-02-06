@@ -1,35 +1,14 @@
 import { Router } from 'express';
 import { TodoController } from '../controllers/todoController';
-import { TodoService } from '../services/todoService';
-import { TodoRepository } from '../repositories/todoRepository';
-import { Database } from '../config/database';
 
-// Initialize dependencies - this will be called after database connection
-export const createTodoRoutes = (): Router => {
+export const createTodoRoutes = (controller: TodoController) => {
   const router = Router();
 
-  const database = Database.getInstance();
-  const todoRepository = new TodoRepository(database.getDb());
-  const todoService = new TodoService(todoRepository);
-  const todoController = new TodoController(todoService);
+  router.post('/filter', controller.filterTodos);
 
-  router.get('/', todoController.getAllTodos);
-
-  router.get('/completed', todoController.getCompletedTodos);
-
-  router.get('/pending', todoController.getPendingTodos);
-
-  router.get('/:id', todoController.getTodoById);
-
-  router.post('/', todoController.createTodo);
-
-  router.put('/:id', todoController.updateTodo);
-
-  router.put('/:id/delete', todoController.deleteTodo);
-
-  // router.delete('/:id', todoController.deleteTodo);
-
-  router.post('/search', todoController.searchTodos);
+  router.get('/', controller.getAllTodos);
+  router.post('/', controller.createTodo);
+  router.get('/:id', controller.getTodoById);
 
   return router;
 };
