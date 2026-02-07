@@ -45,10 +45,9 @@
         }
       }
     },
-
     "/api/todos/filter": {
       "post": {
-        "summary": "Filter todos by status and/or search query",
+        "summary": "Filter todos",
         "requestBody": {
           "required": false,
           "content": {
@@ -56,13 +55,8 @@
               "schema": {
                 "type": "object",
                 "properties": {
-                  "status": {
-                    "type": "string",
-                    "enum": ["pending", "completed"]
-                  },
-                  "search": {
-                    "type": "string"
-                  }
+                  "completed": { "type": "boolean" },
+                  "query": { "type": "string" }
                 },
                 "additionalProperties": false
               }
@@ -84,10 +78,9 @@
         }
       }
     },
-
     "/api/todos/{id}": {
       "get": {
-        "summary": "Get a todo by ID",
+        "summary": "Get todo by id",
         "parameters": [
           {
             "name": "id",
@@ -98,19 +91,16 @@
         ],
         "responses": {
           "200": {
-            "description": "Todo item",
+            "description": "Todo",
             "content": {
-              "application/json": {
-                "schema": { "$ref": "#/components/schemas/Todo" }
-              }
+              "application/json": { "schema": { "$ref": "#/components/schemas/Todo" } }
             }
           },
-          "404": { "description": "Todo not found" }
+          "404": { "description": "Not found" }
         }
       },
-
       "put": {
-        "summary": "Update a todo by ID",
+        "summary": "Update todo",
         "parameters": [
           {
             "name": "id",
@@ -122,26 +112,22 @@
         "requestBody": {
           "required": true,
           "content": {
-            "application/json": {
-              "schema": { "$ref": "#/components/schemas/UpdateTodoRequest" }
-            }
+            "application/json": { "schema": { "$ref": "#/components/schemas/UpdateTodoRequest" } }
           }
         },
         "responses": {
           "200": {
-            "description": "Todo updated",
+            "description": "Updated todo",
             "content": {
-              "application/json": {
-                "schema": { "$ref": "#/components/schemas/Todo" }
-              }
+              "application/json": { "schema": { "$ref": "#/components/schemas/Todo" } }
             }
           },
-          "404": { "description": "Todo not found" }
+          "400": { "description": "Invalid input" },
+          "404": { "description": "Not found" }
         }
       },
-
       "delete": {
-        "summary": "Delete a todo by ID",
+        "summary": "Delete todo",
         "parameters": [
           {
             "name": "id",
@@ -151,32 +137,45 @@
           }
         ],
         "responses": {
-          "204": {
-            "description": "Todo deleted"
-          },
-          "404": { "description": "Todo not found" }
+          "204": { "description": "Todo deleted, no content" },
+          "404": { "description": "Not found" }
         }
       }
     }
   },
-
   "components": {
     "schemas": {
       "Todo": {
-        "type": "object",
-        "properties": {
-          "id": { "type": "string" },
-          "title": { "type": "string" },
-          "description": { "type": "string" },
-          "completed": { "type": "boolean" },
-          "completionMessage": { "type": "string" },
-          "createdAt": { "type": "string", "format": "date-time" },
-          "updatedAt": { "type": "string", "format": "date-time" }
-        },
-        "required": ["id", "title", "completed", "createdAt", "updatedAt"],
-        "additionalProperties": false
+        "oneOf": [
+          {
+            "type": "object",
+            "properties": {
+              "id": { "type": "string" },
+              "title": { "type": "string" },
+              "description": { "type": "string" },
+              "completed": { "type": "boolean", "enum": [false] },
+              "createdAt": { "type": "string", "format": "date-time" },
+              "updatedAt": { "type": "string", "format": "date-time" }
+            },
+            "required": ["id", "title", "completed", "createdAt", "updatedAt"],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "id": { "type": "string" },
+              "title": { "type": "string" },
+              "description": { "type": "string" },
+              "completed": { "type": "boolean", "enum": [true] },
+              "completionMessage": { "type": "string" },
+              "createdAt": { "type": "string", "format": "date-time" },
+              "updatedAt": { "type": "string", "format": "date-time" }
+            },
+            "required": ["id", "title", "completed", "completionMessage", "createdAt", "updatedAt"],
+            "additionalProperties": false
+          }
+        ]
       },
-
       "CreateTodoRequest": {
         "type": "object",
         "properties": {
@@ -186,7 +185,6 @@
         "required": ["title"],
         "additionalProperties": false
       },
-
       "UpdateTodoRequest": {
         "type": "object",
         "properties": {
