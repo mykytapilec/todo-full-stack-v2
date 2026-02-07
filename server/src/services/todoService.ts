@@ -27,7 +27,10 @@ export class TodoService {
     return this.repo.delete(id);
   }
 
-  async filter(payload: { query?: string; status?: 'pending' | 'completed' }): Promise<Result<Todo[], AppError>> {
+  async filter(payload: {
+    query?: string;
+    status?: 'pending' | 'completed';
+  }): Promise<Result<Todo[], AppError>> {
     return this.repo.filter(payload);
   }
 }

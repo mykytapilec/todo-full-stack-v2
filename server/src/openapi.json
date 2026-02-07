@@ -45,9 +45,10 @@
         }
       }
     },
+
     "/api/todos/filter": {
       "post": {
-        "summary": "Filter todos by status or search term",
+        "summary": "Filter todos by status and/or search query",
         "requestBody": {
           "required": false,
           "content": {
@@ -55,8 +56,13 @@
               "schema": {
                 "type": "object",
                 "properties": {
-                  "completed": { "type": "boolean" },
-                  "search": { "type": "string" }
+                  "status": {
+                    "type": "string",
+                    "enum": ["pending", "completed"]
+                  },
+                  "search": {
+                    "type": "string"
+                  }
                 },
                 "additionalProperties": false
               }
@@ -78,6 +84,7 @@
         }
       }
     },
+
     "/api/todos/{id}": {
       "get": {
         "summary": "Get a todo by ID",
@@ -101,6 +108,7 @@
           "404": { "description": "Todo not found" }
         }
       },
+
       "put": {
         "summary": "Update a todo by ID",
         "parameters": [
@@ -115,7 +123,7 @@
           "required": true,
           "content": {
             "application/json": {
-              "schema": { "$ref": "#/components/schemas/CreateTodoRequest" }
+              "schema": { "$ref": "#/components/schemas/UpdateTodoRequest" }
             }
           }
         },
@@ -131,6 +139,7 @@
           "404": { "description": "Todo not found" }
         }
       },
+
       "delete": {
         "summary": "Delete a todo by ID",
         "parameters": [
@@ -142,12 +151,15 @@
           }
         ],
         "responses": {
-          "200": { "description": "Todo deleted" },
+          "204": {
+            "description": "Todo deleted"
+          },
           "404": { "description": "Todo not found" }
         }
       }
     }
   },
+
   "components": {
     "schemas": {
       "Todo": {
@@ -155,18 +167,34 @@
         "properties": {
           "id": { "type": "string" },
           "title": { "type": "string" },
-          "completed": { "type": "boolean" }
+          "description": { "type": "string" },
+          "completed": { "type": "boolean" },
+          "completionMessage": { "type": "string" },
+          "createdAt": { "type": "string", "format": "date-time" },
+          "updatedAt": { "type": "string", "format": "date-time" }
         },
-        "required": ["id", "title", "completed"],
+        "required": ["id", "title", "completed", "createdAt", "updatedAt"],
         "additionalProperties": false
       },
+
       "CreateTodoRequest": {
         "type": "object",
         "properties": {
           "title": { "type": "string" },
-          "completed": { "type": "boolean" }
+          "description": { "type": "string" }
         },
         "required": ["title"],
+        "additionalProperties": false
+      },
+
+      "UpdateTodoRequest": {
+        "type": "object",
+        "properties": {
+          "title": { "type": "string" },
+          "description": { "type": "string" },
+          "completed": { "type": "boolean" },
+          "completionMessage": { "type": "string" }
+        },
         "additionalProperties": false
       }
     }

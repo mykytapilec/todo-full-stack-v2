@@ -31,7 +31,7 @@ type TodoDocument =
 
 export type FilterTodosPayload = {
   query?: string;
-  completed?: boolean;
+  status?: 'pending' | 'completed';
 };
 
 export class TodoRepository {
@@ -211,12 +211,8 @@ export class TodoRepository {
     try {
       const filter: any = this.baseFilter();
 
-      if (payload.completed === true) {
-        filter.status = 'completed';
-      }
-
-      if (payload.completed === false) {
-        filter.status = 'pending';
+      if (payload.status) {
+        filter.status = payload.status;
       }
 
       if (payload.query) {

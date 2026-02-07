@@ -27,14 +27,10 @@ export class TodoController {
   }
 
   filterTodos = async (req: Request, res: Response) => {
-    const { completed, search } = req.body ?? {};
+    const { status, search } = req.body ?? {};
 
     const result = await this.todoService.filter({
-      status: completed === undefined
-        ? undefined
-        : completed
-          ? 'completed'
-          : 'pending',
+      status,
       query: search,
     });
 
@@ -43,9 +39,7 @@ export class TodoController {
       return;
     }
 
-    const apiTodos = this.todosToApiTodos(result.value);
-
-    res.status(200).json(apiTodos);
+    res.status(200).json(this.todosToApiTodos(result.value));
   };
 
   getAllTodos = async (_req: Request, res: Response) => {
