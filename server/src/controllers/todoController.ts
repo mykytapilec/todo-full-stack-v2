@@ -15,7 +15,10 @@ export class TodoController {
       updatedAt: todo.updatedAt,
     };
 
-    if (todo.description) apiTodo.description = todo.description;
+    if (todo.description) {
+      apiTodo.description = todo.description;
+    }
+
     if (todo.status === 'completed' && todo.completionMessage) {
       apiTodo.completionMessage = todo.completionMessage;
     }
@@ -24,8 +27,28 @@ export class TodoController {
   }
 
   private todosToApiTodos(todos: Todo[]): ApiTodo[] {
-    return todos.map((t) => this.todoToApiTodo(t));
+    return todos.map((todo) => this.todoToApiTodo(todo));
   }
+
+  getAllTodos = async (_req: Request, res: Response) => {
+    const result = await this.todoService.getAllTodos();
+
+    if (result.isOk()) {
+      return res.status(200).json(this.todosToApiTodos(result.value));
+    }
+
+    return res.status(500).json({ error: result.error.message });
+  };
+
+  getTodoById = async (req: Request, res: Response) => {
+    const result = await this.todoService.getTodoById(req.params.id);
+
+    if (result.isOk()) {
+      return res.status(200).json(this.todoToApiTodo(result.value));
+    }
+
+    return res.status(404).json({ error: result.error.message });
+  };
 
   filterTodos = async (req: Request, res: Response) => {
     const { completed, query } = req.body ?? {};
@@ -40,29 +63,11 @@ export class TodoController {
       query,
     });
 
-    if (result.isErr()) {
-      return res.status(500).json({ error: result.error.message });
-    }
-
-    res.status(200).json(this.todosToApiTodos(result.value));
-  };
-
-  getAllTodos = async (_req: Request, res: Response) => {
-    const result = await this.todoService.getAllTodos();
     if (result.isOk()) {
-      res.json(this.todosToApiTodos(result.value));
-    } else {
-      res.status(500).json({ error: result.error.message });
+      return res.status(200).json(this.todosToApiTodos(result.value));
     }
-  };
 
-  getTodoById = async (req: Request, res: Response) => {
-    const result = await this.todoService.getTodoById(req.params.id);
-    if (result.isOk()) {
-      res.json(this.todoToApiTodo(result.value));
-    } else {
-      res.status(404).json({ error: 'Todo not found' });
-    }
+    return res.status(500).json({ error: result.error.message });
   };
 
   createTodo = async (req: Request, res: Response) => {
@@ -70,21 +75,27 @@ export class TodoController {
     const result = await this.todoService.createTodo(payload);
 
     if (result.isOk()) {
-      res.status(201).json(this.todoToApiTodo(result.value));
-    } else {
-      res.status(500).json({ error: result.error.message });
+      return res.status(201).json(this.todoToApiTodo(result.value));
     }
+
+    return res.status(500).json({ error: result.error.message });
   };
 
   updateTodo = async (req: Request, res: Response) => {
     const payload: UpdateTodoRequest = req.body;
     const internal: InternalUpdateTodoRequest = {};
 
-    if (payload.title !== undefined) internal.title = payload.title;
-    if (payload.description !== undefined) internal.description = payload.description;
+    if (payload.title !== undefined) {
+      internal.title = payload.title;
+    }
+
+    if (payload.description !== undefined) {
+      internal.description = payload.description;
+    }
 
     if (payload.completed !== undefined) {
       internal.status = payload.completed ? 'completed' : 'pending';
+
       if (payload.completed && payload.completionMessage) {
         internal.completionMessage = payload.completionMessage;
       }
@@ -93,19 +104,23 @@ export class TodoController {
     const result = await this.todoService.updateTodo(req.params.id, internal);
 
     if (result.isOk()) {
-      res.status(200).json(this.todoToApiTodo(result.value));
-    } else {
-      res.status(404).json({ error: result.error.message });
+      return res.status(200).json(this.todoToApiTodo(result.value));
     }
+
+    return res.status(404).json({ error: result.error.message });
   };
 
   deleteTodo = async (req: Request, res: Response) => {
     const result = await this.todoService.deleteTodo(req.params.id);
 
     if (result.isOk()) {
-      res.status(204).send();
-    } else {
-      res.status(404).json({ error: result.error.message });
+      return res.status(204).send();
     }
+
+    if (result.error.type === 'NOT_FOUND') {
+      return res.status(404).json({ error: result.error.message });
+    }
+
+    return res.status(500).json({ error: result.error.message });
   };
 }

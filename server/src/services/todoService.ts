@@ -1,4 +1,4 @@
-import { Result } from 'neverthrow';
+import { err, ok, Result } from 'neverthrow';
 import { TodoRepository } from '../repositories/todoRepository';
 import { Todo, InternalUpdateTodoRequest } from '../types/todo';
 import { CreateTodoRequest } from '@shared/types/api';
@@ -19,15 +19,32 @@ export class TodoService {
     return this.repo.create(payload);
   }
 
-  async updateTodo(id: string, updates: InternalUpdateTodoRequest): Promise<Result<Todo, AppError>> {
+  async updateTodo(
+    id: string,
+    updates: InternalUpdateTodoRequest
+  ): Promise<Result<Todo, AppError>> {
     return this.repo.update(id, updates);
   }
 
-  async deleteTodo(id: string): Promise<Result<boolean, AppError>> {
-    return this.repo.delete(id);
+  /**
+   * deleteTodo:
+   * - OK → todo переведён в status=deleted
+   * - NOT_FOUND → todo не существует или уже deleted
+   */
+  async deleteTodo(id: string): Promise<Result<void, AppError>> {
+    const result = await this.repo.delete(id);
+
+    if (result.isErr()) {
+      return err(result.error);
+    }
+
+    return ok(undefined);
   }
 
-  async filter(payload: { query?: string; status?: 'pending' | 'completed' }): Promise<Result<Todo[], AppError>> {
+  async filter(payload: {
+    query?: string;
+    status?: 'pending' | 'completed';
+  }): Promise<Result<Todo[], AppError>> {
     return this.repo.filter(payload);
   }
 }
