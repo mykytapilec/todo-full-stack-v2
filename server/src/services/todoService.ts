@@ -27,9 +27,7 @@ export class TodoService {
   }
 
   /**
-   * deleteTodo:
-   * - OK → todo переведён в status=deleted
-   * - NOT_FOUND → todo не существует или уже deleted
+   * deleteTodo
    */
   async deleteTodo(id: string): Promise<Result<void, AppError>> {
     const result = await this.repo.delete(id);

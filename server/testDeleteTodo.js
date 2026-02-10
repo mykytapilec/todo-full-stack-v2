@@ -1,24 +1,32 @@
-import fetch from 'node-fetch';
-
 const BASE_URL = 'http://localhost:3000/api/todos';
 
-const todosToTest = [
-  { id: '72f09348-5736-4917-a5ac-0750cdc1902f', desc: 'Существующая тудушка (ожидаем 204)' },
-  { id: '00000000-0000-0000-0000-000000000000', desc: 'Несуществующая тудушка (ожидаем 404)' }
-];
+// ⚠️ первый id ДОЛЖЕН реально существовать в БД
+const EXISTING_ID = '9e54803d-5a5a-4651-822e-99925084aa9b';
+const MISSING_ID = '00000000-0000-0000-0000-000000000000';
+
+async function testDelete(id, description) {
+  console.log(`\n---\nDELETE /todos/${id}\n${description}`);
+
+  const res = await fetch(`${BASE_URL}/${id}`, {
+    method: 'DELETE',
+  });
+
+  let body = null;
+  if (res.status !== 204) {
+    body = await res.json();
+  }
+
+  console.log('Status:', res.status);
+  console.log('Body:', body ?? '(пусто, 204 No Content)');
+}
 
 (async () => {
-  for (const todo of todosToTest) {
-    console.log(`\n---\nDELETE /todos/${todo.id}\n(${todo.desc})`);
+  // 1️⃣ Удаляем существующую тудушку → 204
+  await testDelete(EXISTING_ID, 'Существующая тудушка (ожидаем 204)');
 
-    try {
-      const res = await fetch(`${BASE_URL}/${todo.id}/delete`, { method: 'PUT' });
-      const body = res.status !== 204 ? await res.json() : null;
+  // 2️⃣ Повторное удаление → 404
+  await testDelete(EXISTING_ID, 'Повторное удаление (ожидаем 404)');
 
-      console.log('Status:', res.status);
-      console.log('Body:', body || '(пусто, 204 No Content)');
-    } catch (err) {
-      console.error('Ошибка при запросе:', err);
-    }
-  }
+  // 3️⃣ Удаление несуществующей → 404
+  await testDelete(MISSING_ID, 'Несуществующая тудушка (ожидаем 404)');
 })();
