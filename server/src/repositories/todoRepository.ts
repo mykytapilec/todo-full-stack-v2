@@ -126,13 +126,15 @@ export class TodoRepository {
 
   async delete(id: string): Promise<Result<boolean, AppError>> {
     try {
-      const result = await this.collection.findOneAndUpdate(
-        { ...this.baseFilter(), id } as any,
-        { $set: { status: 'deleted', updatedAt: new Date() } },
-        { returnDocument: 'after' }
-      ) as unknown as { value: WithId<TodoDocument> | null };
+      const result = await this.collection.updateOne(
+        { id, status: { $ne: 'deleted' } },
+        { $set: { status: 'deleted', updatedAt: new Date() } }
+      );
 
-      if (!result.value) return err(createNotFoundError('Todo', id));
+      if (result.matchedCount === 0) {
+        return err(createNotFoundError('Todo', id));
+      }
+
       return ok(true);
     } catch (error) {
       return err(createDatabaseError('Failed to delete todo', error));

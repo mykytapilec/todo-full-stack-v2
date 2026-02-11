@@ -11,7 +11,7 @@ export const createTodoRoutes = (controller: TodoController) => {
   router.get('/:id', controller.getTodoById);
 
   router.put('/:id', controller.updateTodo);
-  router.put('/:id/delete', controller.deleteTodo);
+  router.delete('/:id', controller.deleteTodo);
 
   return router;
 };

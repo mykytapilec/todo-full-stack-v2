@@ -20,6 +20,6 @@ export const todoApi = {
   },
 
   deleteTodo: async (id: string): Promise<void> => {
-    await api.put(`/${id}/delete`);
+    await api.delete(`/${id}`);
   },
 };
