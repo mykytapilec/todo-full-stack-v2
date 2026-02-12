@@ -1,6 +1,10 @@
 import { Request, Response } from 'express';
 import { TodoService } from '../services/todoService';
-import { CreateTodoRequest, UpdateTodoRequest, ApiTodo } from '@shared/types/api';
+import {
+  CreateTodoRequest,
+  UpdateTodoRequest,
+  ApiTodo,
+} from '@shared/types/api';
 import { InternalUpdateTodoRequest, Todo } from '../types/todo';
 
 export class TodoController {
@@ -10,7 +14,7 @@ export class TodoController {
     const apiTodo: ApiTodo = {
       id: todo.id,
       title: todo.title,
-      completed: todo.status === 'completed',
+      completed: todo.completed,
       createdAt: todo.createdAt,
       updatedAt: todo.updatedAt,
     };
@@ -19,7 +23,7 @@ export class TodoController {
       apiTodo.description = todo.description;
     }
 
-    if (todo.status === 'completed' && todo.completionMessage) {
+    if (todo.completed && todo.completionMessage) {
       apiTodo.completionMessage = todo.completionMessage;
     }
 
@@ -63,6 +67,7 @@ export class TodoController {
       query,
     });
 
+
     if (result.isOk()) {
       return res.status(200).json(this.todosToApiTodos(result.value));
     }
@@ -101,7 +106,10 @@ export class TodoController {
       }
     }
 
-    const result = await this.todoService.updateTodo(req.params.id, internal);
+    const result = await this.todoService.updateTodo(
+      req.params.id,
+      internal
+    );
 
     if (result.isOk()) {
       return res.status(200).json(this.todoToApiTodo(result.value));

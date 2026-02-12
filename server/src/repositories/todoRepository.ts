@@ -40,24 +40,32 @@ export class TodoRepository {
   }
 
   private documentToTodo(doc: WithId<TodoDocument>): Todo {
-    const baseTodo: Todo = {
+    const todo: Todo = {
       id: doc.id,
       title: doc.title,
-      status: doc.status === 'deleted' ? 'pending' : doc.status,
+      completed: doc.status === 'completed',
       createdAt: doc.createdAt,
       updatedAt: doc.updatedAt,
     };
 
-    if (doc.description) baseTodo.description = doc.description;
-    if (doc.status === 'completed' && 'completionMessage' in doc)
-      baseTodo.completionMessage = doc.completionMessage;
+    if (doc.description) {
+      todo.description = doc.description;
+    }
 
-    return baseTodo;
+    if (doc.status === 'completed' && 'completionMessage' in doc) {
+      todo.completionMessage = doc.completionMessage;
+    }
+
+    return todo;
   }
 
   async findAll(): Promise<Result<Todo[], AppError>> {
     try {
-      const docs = await this.collection.find(this.baseFilter() as any).sort({ createdAt: -1 }).toArray();
+      const docs = await this.collection
+        .find(this.baseFilter() as any)
+        .sort({ createdAt: -1 })
+        .toArray();
+
       return ok(docs.map((d) => this.documentToTodo(d)));
     } catch (error) {
       return err(createDatabaseError('Failed to retrieve todos', error));
@@ -66,8 +74,13 @@ export class TodoRepository {
 
   async findById(id: string): Promise<Result<Todo, AppError>> {
     try {
-      const doc = await this.collection.findOne({ ...this.baseFilter(), id } as any);
+      const doc = await this.collection.findOne({
+        ...this.baseFilter(),
+        id,
+      } as any);
+
       if (!doc) return err(createNotFoundError('Todo', id));
+
       return ok(this.documentToTodo(doc as WithId<TodoDocument>));
     } catch (error) {
       return err(createDatabaseError('Failed to retrieve todo', error));
@@ -77,6 +90,7 @@ export class TodoRepository {
   async create(todoData: CreateTodoRequest): Promise<Result<Todo, AppError>> {
     try {
       const now = new Date();
+
       const doc: TodoDocument = {
         schemaVersion: 1,
         id: randomUUID(),
@@ -85,9 +99,13 @@ export class TodoRepository {
         createdAt: now,
         updatedAt: now,
       };
-      if (todoData.description) doc.description = todoData.description;
+
+      if (todoData.description) {
+        doc.description = todoData.description;
+      }
 
       await this.collection.insertOne(doc);
+
       return ok(this.documentToTodo(doc as WithId<TodoDocument>));
     } catch (error) {
       return err(createDatabaseError('Failed to create todo', error));
@@ -99,26 +117,53 @@ export class TodoRepository {
     updates: InternalUpdateTodoRequest
   ): Promise<Result<Todo, AppError>> {
     try {
-      const updateDoc: Partial<TodoDocument> & { updatedAt: Date } = { updatedAt: new Date() };
-      if (updates.title !== undefined) updateDoc.title = updates.title;
-      if (updates.description !== undefined) updateDoc.description = updates.description;
-      if (updates.status !== undefined) {
-        updateDoc.status = updates.status;
-        if (updates.status === 'completed' && updates.completionMessage)
-          (updateDoc as any).completionMessage = updates.completionMessage;
+      const now = new Date();
+
+      const setFields: any = {
+        updatedAt: now,
+      };
+
+      const unsetFields: Record<string, ''> = {};
+
+      if (updates.title !== undefined) {
+        setFields.title = updates.title;
       }
 
-      const updateQuery: any = { $set: updateDoc };
-      if (updates.status === 'pending') updateQuery.$unset = { completionMessage: '' };
+      if (updates.description !== undefined) {
+        setFields.description = updates.description;
+      }
 
-      const result = await this.collection.findOneAndUpdate(
+      if (updates.status !== undefined) {
+        setFields.status = updates.status;
+
+        if (updates.status === 'completed') {
+          if (updates.completionMessage) {
+            setFields.completionMessage = updates.completionMessage;
+          }
+        }
+
+        if (updates.status === 'pending') {
+          unsetFields.completionMessage = '';
+        }
+      }
+
+      const updateQuery: any = { $set: setFields };
+
+      if (Object.keys(unsetFields).length > 0) {
+        updateQuery.$unset = unsetFields;
+      }
+
+      const updatedDoc = await this.collection.findOneAndUpdate(
         { ...this.baseFilter(), id } as any,
         updateQuery,
         { returnDocument: 'after' }
-      ) as unknown as { value: WithId<TodoDocument> | null };
+      );
 
-      if (!result.value) return err(createNotFoundError('Todo', id));
-      return ok(this.documentToTodo(result.value));
+      if (!updatedDoc) {
+        return err(createNotFoundError('Todo', id));
+      }
+
+      return ok(this.documentToTodo(updatedDoc));
     } catch (error) {
       return err(createDatabaseError('Failed to update todo', error));
     }
@@ -144,14 +189,22 @@ export class TodoRepository {
   async filter(payload: FilterTodosPayload): Promise<Result<Todo[], AppError>> {
     try {
       const filter: any = this.baseFilter();
+
       if (payload.completed === true) filter.status = 'completed';
       if (payload.completed === false) filter.status = 'pending';
-      if (payload.query) filter.$or = [
-        { title: { $regex: payload.query, $options: 'i' } },
-        { description: { $regex: payload.query, $options: 'i' } },
-      ];
 
-      const docs = await this.collection.find(filter).sort({ createdAt: -1 }).toArray();
+      if (payload.query) {
+        filter.$or = [
+          { title: { $regex: payload.query, $options: 'i' } },
+          { description: { $regex: payload.query, $options: 'i' } },
+        ];
+      }
+
+      const docs = await this.collection
+        .find(filter)
+        .sort({ createdAt: -1 })
+        .toArray();
+
       return ok(docs.map((d) => this.documentToTodo(d)));
     } catch (error) {
       return err(createDatabaseError('Failed to filter todos', error));
