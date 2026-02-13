@@ -11,9 +11,12 @@ const QUERY_KEYS = {
 export const useFilteredTodos = ({ query, status }: { query?: string; status?: FilterType }) => {
   const trimmedQuery = query?.trim();
 
+  const isComplete = status === 'completed'
+  const isPending = status === 'pending'
+
   return useQuery({
     queryKey: QUERY_KEYS.filteredTodos(trimmedQuery, status),
-    queryFn: () => todoApi.filterTodos({ query: trimmedQuery, status: status === 'all' ? undefined : status }),
+    queryFn: () => todoApi.filterTodos({ query: trimmedQuery, completed: status === undefined ? undefined : isComplete ? true : isPending ? false : undefined }),
     staleTime: 1000 * 30,
   });
 };

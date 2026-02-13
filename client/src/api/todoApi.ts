@@ -4,7 +4,7 @@ import { ApiTodo, CreateTodoRequest, UpdateTodoRequest } from '@shared/types/api
 const api = axios.create({ baseURL: '/api/todos', headers: { 'Content-Type': 'application/json' } });
 
 export const todoApi = {
-  filterTodos: async (params?: { query?: string; status?: 'pending' | 'completed' }): Promise<ApiTodo[]> => {
+  filterTodos: async (params?: { query?: string; completed?: boolean }): Promise<ApiTodo[]> => {
     const response = await api.post<ApiTodo[]>('/filter', params || {});
     return response.data;
   },
