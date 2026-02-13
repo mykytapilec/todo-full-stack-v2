@@ -58,15 +58,9 @@ export class TodoController {
     const { completed, query } = req.body ?? {};
 
     const result = await this.todoService.filter({
-      status:
-        completed === undefined
-          ? undefined
-          : completed
-          ? 'completed'
-          : 'pending',
+      completed,
       query,
     });
-
 
     if (result.isOk()) {
       return res.status(200).json(this.todosToApiTodos(result.value));

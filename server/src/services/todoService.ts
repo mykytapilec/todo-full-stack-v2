@@ -40,9 +40,18 @@ export class TodoService {
   }
 
   async filter(payload: {
+    completed?: boolean | string;
     query?: string;
-    status?: 'pending' | 'completed';
   }): Promise<Result<Todo[], AppError>> {
-    return this.repo.filter(payload);
+    const normalizedCompleted =
+      typeof payload.completed === 'string'
+        ? payload.completed === 'true'
+        : payload.completed;
+
+    return this.repo.filter({
+      completed: normalizedCompleted,
+      query: payload.query,
+    });
   }
+
 }

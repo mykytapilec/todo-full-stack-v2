@@ -1,4 +1,4 @@
-import { Collection, Db, WithId } from 'mongodb';
+import { Collection, Db, Filter } from 'mongodb';
 import { Result, ok, err } from 'neverthrow';
 import { randomUUID } from 'crypto';
 import { Todo, InternalUpdateTodoRequest } from '../types/todo';
@@ -35,11 +35,11 @@ export class TodoRepository {
     this.collection = db.collection<TodoDocument>('todos');
   }
 
-  private baseFilter() {
-    return { status: { $ne: 'deleted' } as const };
+  private baseFilter(): Filter<TodoDocument> {
+    return { status: { $ne: 'deleted' } };
   }
 
-  private documentToTodo(doc: WithId<TodoDocument>): Todo {
+  private documentToTodo(doc: TodoDocument): Todo {
     const todo: Todo = {
       id: doc.id,
       title: doc.title,
@@ -52,7 +52,7 @@ export class TodoRepository {
       todo.description = doc.description;
     }
 
-    if (doc.status === 'completed' && 'completionMessage' in doc) {
+    if (doc.status === 'completed') {
       todo.completionMessage = doc.completionMessage;
     }
 
@@ -62,7 +62,7 @@ export class TodoRepository {
   async findAll(): Promise<Result<Todo[], AppError>> {
     try {
       const docs = await this.collection
-        .find(this.baseFilter() as any)
+        .find(this.baseFilter())
         .sort({ createdAt: -1 })
         .toArray();
 
@@ -77,11 +77,13 @@ export class TodoRepository {
       const doc = await this.collection.findOne({
         ...this.baseFilter(),
         id,
-      } as any);
+      });
 
-      if (!doc) return err(createNotFoundError('Todo', id));
+      if (!doc) {
+        return err(createNotFoundError('Todo', id));
+      }
 
-      return ok(this.documentToTodo(doc as WithId<TodoDocument>));
+      return ok(this.documentToTodo(doc));
     } catch (error) {
       return err(createDatabaseError('Failed to retrieve todo', error));
     }
@@ -98,15 +100,12 @@ export class TodoRepository {
         status: 'pending',
         createdAt: now,
         updatedAt: now,
+        ...(todoData.description && { description: todoData.description }),
       };
-
-      if (todoData.description) {
-        doc.description = todoData.description;
-      }
 
       await this.collection.insertOne(doc);
 
-      return ok(this.documentToTodo(doc as WithId<TodoDocument>));
+      return ok(this.documentToTodo(doc));
     } catch (error) {
       return err(createDatabaseError('Failed to create todo', error));
     }
@@ -119,7 +118,7 @@ export class TodoRepository {
     try {
       const now = new Date();
 
-      const setFields: any = {
+      const setFields: Partial<TodoDocument> & { updatedAt: Date } = {
         updatedAt: now,
       };
 
@@ -138,7 +137,8 @@ export class TodoRepository {
 
         if (updates.status === 'completed') {
           if (updates.completionMessage) {
-            setFields.completionMessage = updates.completionMessage;
+            (setFields as any).completionMessage =
+              updates.completionMessage;
           }
         }
 
@@ -153,17 +153,17 @@ export class TodoRepository {
         updateQuery.$unset = unsetFields;
       }
 
-      const updatedDoc = await this.collection.findOneAndUpdate(
-        { ...this.baseFilter(), id } as any,
+      const result = await this.collection.findOneAndUpdate(
+        { ...this.baseFilter(), id },
         updateQuery,
         { returnDocument: 'after' }
       );
 
-      if (!updatedDoc) {
+      if (!result) {
         return err(createNotFoundError('Todo', id));
       }
 
-      return ok(this.documentToTodo(updatedDoc));
+      return ok(this.documentToTodo(result));
     } catch (error) {
       return err(createDatabaseError('Failed to update todo', error));
     }
@@ -188,10 +188,17 @@ export class TodoRepository {
 
   async filter(payload: FilterTodosPayload): Promise<Result<Todo[], AppError>> {
     try {
-      const filter: any = this.baseFilter();
+      const filter: Filter<TodoDocument> = {
+        ...this.baseFilter(),
+      };
 
-      if (payload.completed === true) filter.status = 'completed';
-      if (payload.completed === false) filter.status = 'pending';
+      if (payload.completed === true) {
+        filter.status = 'completed';
+      }
+
+      if (payload.completed === false) {
+        filter.status = 'pending';
+      }
 
       if (payload.query) {
         filter.$or = [
