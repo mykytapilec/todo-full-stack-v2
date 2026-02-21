@@ -54,4 +54,17 @@ export class TodoService {
     });
   }
 
+    async getDeletedTodos(): Promise<Result<Todo[], AppError>> {
+    return this.repo.findDeleted();
+  }
+
+  async restoreTodo(id: string): Promise<Result<void, AppError>> {
+    const result = await this.repo.restore(id);
+
+    if (result.isErr()) {
+      return err(result.error);
+    }
+
+    return ok(undefined);
+  }
 }

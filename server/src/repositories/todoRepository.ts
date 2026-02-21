@@ -217,4 +217,44 @@ export class TodoRepository {
       return err(createDatabaseError('Failed to filter todos', error));
     }
   }
+
+    async findDeleted(): Promise<Result<Todo[], AppError>> {
+    try {
+      const docs = await this.collection
+        .find({ status: 'deleted' })
+        .sort({ updatedAt: -1 })
+        .toArray();
+
+      return ok(docs.map((d) => this.documentToTodo(d)));
+    } catch (error) {
+      return err(
+        createDatabaseError('Failed to retrieve deleted todos', error)
+      );
+    }
+  }
+
+  async restore(id: string): Promise<Result<boolean, AppError>> {
+    try {
+      const result = await this.collection.updateOne(
+        { id, status: 'deleted' },
+        {
+          $set: {
+            status: 'pending',
+            updatedAt: new Date(),
+          },
+          $unset: {
+            completionMessage: '',
+          },
+        }
+      );
+
+      if (result.matchedCount === 0) {
+        return err(createNotFoundError('Todo', id));
+      }
+
+      return ok(true);
+    } catch (error) {
+      return err(createDatabaseError('Failed to restore todo', error));
+    }
+  }
 }

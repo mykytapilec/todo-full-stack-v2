@@ -125,4 +125,28 @@ export class TodoController {
 
     return res.status(500).json({ error: result.error.message });
   };
+
+    getDeletedTodos = async (_req: Request, res: Response) => {
+    const result = await this.todoService.getDeletedTodos();
+
+    if (result.isOk()) {
+      return res.status(200).json(this.todosToApiTodos(result.value));
+    }
+
+    return res.status(500).json({ error: result.error.message });
+  };
+
+  restoreTodo = async (req: Request, res: Response) => {
+    const result = await this.todoService.restoreTodo(req.params.id);
+
+    if (result.isOk()) {
+      return res.status(204).send();
+    }
+
+    if (result.error.type === 'NOT_FOUND') {
+      return res.status(404).json({ error: result.error.message });
+    }
+
+    return res.status(500).json({ error: result.error.message });
+  };
 }
