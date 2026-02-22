@@ -6,15 +6,14 @@ export const createTodoRoutes = (controller: TodoController) => {
 
   router.post('/filter', controller.filterTodos);
 
+  router.get('/deleted', controller.getDeletedTodos);
+  router.post('/:id/restore', controller.restoreTodo);
+
   router.get('/', controller.getAllTodos);
   router.post('/', controller.createTodo);
   router.get('/:id', controller.getTodoById);
-
   router.put('/:id', controller.updateTodo);
   router.delete('/:id', controller.deleteTodo);
-
-  router.get('/todos/deleted', controller.getDeletedTodos);
-  router.post('/todos/:id/restore', controller.restoreTodo);
 
   return router;
 };

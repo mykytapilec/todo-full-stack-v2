@@ -7,7 +7,7 @@
   "paths": {
     "/api/todos": {
       "get": {
-        "summary": "Get all todos",
+        "summary": "Get all active todos",
         "responses": {
           "200": {
             "description": "Todos",
@@ -17,14 +17,6 @@
                   "type": "array",
                   "items": { "$ref": "#/components/schemas/Todo" }
                 }
-              }
-            }
-          },
-          "500": {
-            "description": "Server error",
-            "content": {
-              "application/json": {
-                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
               }
             }
           }
@@ -48,18 +40,11 @@
                 "schema": { "$ref": "#/components/schemas/Todo" }
               }
             }
-          },
-          "500": {
-            "description": "Server error",
-            "content": {
-              "application/json": {
-                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
-              }
-            }
           }
         }
       }
     },
+
     "/api/todos/filter": {
       "post": {
         "summary": "Filter todos",
@@ -69,7 +54,10 @@
               "schema": {
                 "type": "object",
                 "properties": {
-                  "completed": { "type": "boolean" },
+                  "status": {
+                    "type": "string",
+                    "enum": ["pending", "completed"]
+                  },
                   "query": { "type": "string" }
                 },
                 "additionalProperties": false
@@ -88,21 +76,33 @@
                 }
               }
             }
-          },
-          "500": {
-            "description": "Server error",
+          }
+        }
+      }
+    },
+
+    "/api/todos/deleted": {
+      "get": {
+        "summary": "Get deleted todos",
+        "responses": {
+          "200": {
+            "description": "Deleted todos",
             "content": {
               "application/json": {
-                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+                "schema": {
+                  "type": "array",
+                  "items": { "$ref": "#/components/schemas/Todo" }
+                }
               }
             }
           }
         }
       }
     },
+
     "/api/todos/{id}": {
       "get": {
-        "summary": "Get todo",
+        "summary": "Get todo by id",
         "parameters": [
           {
             "name": "id",
@@ -120,14 +120,7 @@
               }
             }
           },
-          "404": {
-            "description": "Not found",
-            "content": {
-              "application/json": {
-                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
-              }
-            }
-          }
+          "404": { "description": "Not found" }
         }
       },
       "put": {
@@ -156,22 +149,6 @@
                 "schema": { "$ref": "#/components/schemas/Todo" }
               }
             }
-          },
-          "404": {
-            "description": "Not found",
-            "content": {
-              "application/json": {
-                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
-              }
-            }
-          },
-          "500": {
-            "description": "Server error",
-            "content": {
-              "application/json": {
-                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
-              }
-            }
           }
         }
       },
@@ -186,29 +163,37 @@
           }
         ],
         "responses": {
-          "204": {
-            "description": "Deleted (No Content)"
-          },
-          "404": {
-            "description": "Todo not found",
-            "content": {
-              "application/json": {
-                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
-              }
-            }
-          },
-          "500": {
-            "description": "Server error",
-            "content": {
-              "application/json": {
-                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
-              }
-            }
+          "204": { "description": "Deleted" }
+        }
+      }
+    },
+
+    "/api/todos/{id}/restore": {
+      "post": {
+        "summary": "Restore deleted todo",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" }
           }
+        ],
+        "responses": {
+          "200": {
+            "description": "Restored todo",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Todo" }
+              }
+            }
+          },
+          "404": { "description": "Not found" }
         }
       }
     }
   },
+
   "components": {
     "schemas": {
       "Todo": {
@@ -225,6 +210,7 @@
         "required": ["id", "title", "completed", "createdAt", "updatedAt"],
         "additionalProperties": false
       },
+
       "CreateTodoRequest": {
         "type": "object",
         "properties": {
@@ -234,6 +220,7 @@
         "required": ["title"],
         "additionalProperties": false
       },
+
       "UpdateTodoRequest": {
         "type": "object",
         "properties": {
@@ -242,14 +229,6 @@
           "completed": { "type": "boolean" },
           "completionMessage": { "type": "string" }
         },
-        "additionalProperties": false
-      },
-      "ErrorResponse": {
-        "type": "object",
-        "properties": {
-          "error": { "type": "string" }
-        },
-        "required": ["error"],
         "additionalProperties": false
       }
     }
