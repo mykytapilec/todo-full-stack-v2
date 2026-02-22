@@ -126,7 +126,7 @@ export class TodoController {
     return res.status(500).json({ error: result.error.message });
   };
 
-    getDeletedTodos = async (_req: Request, res: Response) => {
+  getDeletedTodos = async (_req: Request, res: Response) => {
     const result = await this.todoService.getDeletedTodos();
 
     if (result.isOk()) {

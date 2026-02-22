@@ -218,7 +218,7 @@ export class TodoRepository {
     }
   }
 
-    async findDeleted(): Promise<Result<Todo[], AppError>> {
+  async findDeleted(): Promise<Result<Todo[], AppError>> {
     try {
       const docs = await this.collection
         .find({ status: 'deleted' })

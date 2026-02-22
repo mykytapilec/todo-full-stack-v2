@@ -30,7 +30,6 @@ export class TodoApplication {
     );
 
     this.app.use(express.json());
-console.log('🔥 OPENAPI PATH =', apiDocs);
 
     this.app.use(
       OpenApiValidator.middleware({
@@ -45,13 +44,11 @@ console.log('🔥 OPENAPI PATH =', apiDocs);
           removeAdditional: true,
         },
         ignorePaths: /.*\/api-docs.*/,
-        // basePath: '/api', // ключевой момент: указываем префикс /api
       })
     );
   }
 
   private setupRoutes(): void {
-    // Инициализация зависимостей
     const todoRepository = new TodoRepository(this.database.getDb());
     const todoService = new TodoService(todoRepository);
     const todoController = new TodoController(todoService);
@@ -118,15 +115,32 @@ console.log('🔥 OPENAPI PATH =', apiDocs);
     if (!this.database.isConnected()) {
       await this.initialize();
     }
+
     return new Promise((resolve, reject) => {
       try {
         this.server = this.app.listen(port, () => {
           resolve(this.server!);
         });
+
         this.server.on('error', (error) => reject(error));
       } catch (error) {
         reject(error);
       }
     });
+  }
+
+  public async stop(): Promise<void> {
+    if (this.server) {
+      await new Promise<void>((resolve, reject) => {
+        this.server!.close((err) => {
+          if (err) reject(err);
+          else resolve();
+        });
+      });
+    }
+
+    if (this.database.isConnected()) {
+      await this.database.disconnect();
+    }
   }
 }
