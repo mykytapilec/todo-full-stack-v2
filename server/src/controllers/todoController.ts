@@ -10,11 +10,14 @@ import { InternalUpdateTodoRequest, Todo } from '../types/todo';
 export class TodoController {
   constructor(private todoService: TodoService) {}
 
+  /**
+   * Domain → API adapter
+   */
   private todoToApiTodo(todo: Todo): ApiTodo {
     const apiTodo: ApiTodo = {
       id: todo.id,
       title: todo.title,
-      completed: todo.completed,
+      completed: todo.status === 'completed',
       createdAt: todo.createdAt,
       updatedAt: todo.updatedAt,
     };
@@ -23,7 +26,7 @@ export class TodoController {
       apiTodo.description = todo.description;
     }
 
-    if (todo.completed && todo.completionMessage) {
+    if (todo.status === 'completed' && todo.completionMessage) {
       apiTodo.completionMessage = todo.completionMessage;
     }
 
@@ -51,14 +54,21 @@ export class TodoController {
       return res.status(200).json(this.todoToApiTodo(result.value));
     }
 
-    return res.status(404).json({ error: result.error.message });
+    if (result.error.type === 'NOT_FOUND') {
+      return res.status(404).json({ error: result.error.message });
+    }
+
+    return res.status(500).json({ error: result.error.message });
   };
 
+  /**
+   * Filter now works via status instead of completed
+   */
   filterTodos = async (req: Request, res: Response) => {
-    const { completed, query } = req.body ?? {};
+    const { status, query } = req.body ?? {};
 
     const result = await this.todoService.filter({
-      completed,
+      status,
       query,
     });
 
@@ -71,6 +81,7 @@ export class TodoController {
 
   createTodo = async (req: Request, res: Response) => {
     const payload: CreateTodoRequest = req.body;
+
     const result = await this.todoService.createTodo(payload);
 
     if (result.isOk()) {
@@ -82,6 +93,7 @@ export class TodoController {
 
   updateTodo = async (req: Request, res: Response) => {
     const payload: UpdateTodoRequest = req.body;
+
     const internal: InternalUpdateTodoRequest = {};
 
     if (payload.title !== undefined) {
@@ -109,7 +121,11 @@ export class TodoController {
       return res.status(200).json(this.todoToApiTodo(result.value));
     }
 
-    return res.status(404).json({ error: result.error.message });
+    if (result.error.type === 'NOT_FOUND') {
+      return res.status(404).json({ error: result.error.message });
+    }
+
+    return res.status(500).json({ error: result.error.message });
   };
 
   deleteTodo = async (req: Request, res: Response) => {

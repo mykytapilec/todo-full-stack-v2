@@ -4,7 +4,7 @@ export interface Todo {
   id: string;
   title: string;
   description?: string;
-  completed: boolean;
+  status: Exclude<TodoStatus, 'deleted'>;
   completionMessage?: string;
   createdAt: Date;
   updatedAt: Date;

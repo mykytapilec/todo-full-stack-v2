@@ -1,6 +1,6 @@
 import { err, ok, Result } from 'neverthrow';
 import { TodoRepository } from '../repositories/todoRepository';
-import { Todo, InternalUpdateTodoRequest } from '../types/todo';
+import { Todo, InternalUpdateTodoRequest, TodoStatus } from '../types/todo';
 import { CreateTodoRequest } from '@shared/types/api';
 import { AppError } from '../types/errors';
 
@@ -26,9 +26,6 @@ export class TodoService {
     return this.repo.update(id, updates);
   }
 
-  /**
-   * deleteTodo
-   */
   async deleteTodo(id: string): Promise<Result<void, AppError>> {
     const result = await this.repo.delete(id);
 
@@ -39,25 +36,6 @@ export class TodoService {
     return ok(undefined);
   }
 
-  async filter(payload: {
-    completed?: boolean | string;
-    query?: string;
-  }): Promise<Result<Todo[], AppError>> {
-    const normalizedCompleted =
-      typeof payload.completed === 'string'
-        ? payload.completed === 'true'
-        : payload.completed;
-
-    return this.repo.filter({
-      completed: normalizedCompleted,
-      query: payload.query,
-    });
-  }
-
-    async getDeletedTodos(): Promise<Result<Todo[], AppError>> {
-    return this.repo.findDeleted();
-  }
-
   async restoreTodo(id: string): Promise<Result<void, AppError>> {
     const result = await this.repo.restore(id);
 
@@ -66,5 +44,28 @@ export class TodoService {
     }
 
     return ok(undefined);
+  }
+
+  async getDeletedTodos(): Promise<Result<Todo[], AppError>> {
+    return this.repo.findDeleted();
+  }
+
+  async filter(payload: {
+    status?: Exclude<TodoStatus, 'deleted'> | string;
+    query?: string;
+  }): Promise<Result<Todo[], AppError>> {
+    const normalizedStatus =
+      typeof payload.status === 'string'
+        ? payload.status === 'completed'
+          ? 'completed'
+          : payload.status === 'pending'
+          ? 'pending'
+          : undefined
+        : payload.status;
+
+    return this.repo.filter({
+      status: normalizedStatus,
+      query: payload.query,
+    });
   }
 }

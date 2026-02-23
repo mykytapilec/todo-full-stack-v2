@@ -1,7 +1,11 @@
 import { Collection, Db, Filter } from 'mongodb';
 import { Result, ok, err } from 'neverthrow';
 import { randomUUID } from 'crypto';
-import { Todo, InternalUpdateTodoRequest } from '../types/todo';
+import {
+  Todo,
+  InternalUpdateTodoRequest,
+  TodoStatus,
+} from '../types/todo';
 import { CreateTodoRequest } from '@shared/types/api';
 import {
   AppError,
@@ -20,12 +24,15 @@ type TodoDocumentBase = {
 
 type TodoDocument =
   | (TodoDocumentBase & { status: 'pending' })
-  | (TodoDocumentBase & { status: 'completed'; completionMessage: string })
+  | (TodoDocumentBase & {
+      status: 'completed';
+      completionMessage: string;
+    })
   | (TodoDocumentBase & { status: 'deleted' });
 
 export type FilterTodosPayload = {
   query?: string;
-  completed?: boolean;
+  status?: Exclude<TodoStatus, 'deleted'>;
 };
 
 export class TodoRepository {
@@ -43,7 +50,7 @@ export class TodoRepository {
     const todo: Todo = {
       id: doc.id,
       title: doc.title,
-      completed: doc.status === 'completed',
+      status: doc.status as Exclude<TodoStatus, 'deleted'>,
       createdAt: doc.createdAt,
       updatedAt: doc.updatedAt,
     };
@@ -136,10 +143,16 @@ export class TodoRepository {
         setFields.status = updates.status;
 
         if (updates.status === 'completed') {
-          if (updates.completionMessage) {
-            (setFields as any).completionMessage =
-              updates.completionMessage;
+          if (!updates.completionMessage) {
+            return err(
+              createDatabaseError(
+                'Completion message required when marking as completed'
+              )
+            );
           }
+
+          (setFields as any).completionMessage =
+            updates.completionMessage;
         }
 
         if (updates.status === 'pending') {
@@ -169,7 +182,7 @@ export class TodoRepository {
     }
   }
 
-  async delete(id: string): Promise<Result<boolean, AppError>> {
+  async delete(id: string): Promise<Result<void, AppError>> {
     try {
       const result = await this.collection.updateOne(
         { id, status: { $ne: 'deleted' } },
@@ -180,7 +193,7 @@ export class TodoRepository {
         return err(createNotFoundError('Todo', id));
       }
 
-      return ok(true);
+      return ok(undefined);
     } catch (error) {
       return err(createDatabaseError('Failed to delete todo', error));
     }
@@ -192,12 +205,8 @@ export class TodoRepository {
         ...this.baseFilter(),
       };
 
-      if (payload.completed === true) {
-        filter.status = 'completed';
-      }
-
-      if (payload.completed === false) {
-        filter.status = 'pending';
+      if (payload.status) {
+        filter.status = payload.status;
       }
 
       if (payload.query) {
@@ -233,7 +242,7 @@ export class TodoRepository {
     }
   }
 
-  async restore(id: string): Promise<Result<boolean, AppError>> {
+  async restore(id: string): Promise<Result<void, AppError>> {
     try {
       const result = await this.collection.updateOne(
         { id, status: 'deleted' },
@@ -252,7 +261,7 @@ export class TodoRepository {
         return err(createNotFoundError('Todo', id));
       }
 
-      return ok(true);
+      return ok(undefined);
     } catch (error) {
       return err(createDatabaseError('Failed to restore todo', error));
     }
