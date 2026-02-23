@@ -37,7 +37,7 @@ export const useFilteredTodos = ({ query, status }: UseFilteredTodosParams) => {
     queryFn: () =>
       todoApi.filterTodos({
         query: trimmedQuery,
-        completed,
+        status: status === 'all' ? undefined : status,
       }),
     staleTime: 1000 * 30,
   });
