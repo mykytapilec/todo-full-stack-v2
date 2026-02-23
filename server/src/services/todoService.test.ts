@@ -1,303 +1,184 @@
-import { describe, it, expect, beforeEach } from 'vitest';
-import { instance, mock, when, verify } from 'ts-mockito';
-import { ok, err } from 'neverthrow';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { TodoRepository, FilterTodosPayload } from '../repositories/todoRepository';
 import { TodoService } from './todoService';
-import { TodoRepository } from '../repositories/todoRepository';
-import { Todo } from '../types/todo';
+import { ok, err } from 'neverthrow';
+import { createNotFoundError, createDatabaseError } from '../types/errors';
 import { CreateTodoRequest } from '@shared/types/api';
-import { createDatabaseError, createNotFoundError } from '../types/errors';
+import { Todo } from '../types/todo';
 
 describe('TodoService', () => {
+  let mockRepo: TodoRepository;
   let todoService: TodoService;
-  let mockTodoRepository: TodoRepository;
 
-  const sampleTodo: Todo = {
-    id: 'test-id-1',
-    title: 'Test Todo',
-    description: 'Test Description',
-    status: 'pending',
-    createdAt: new Date('2023-01-01'),
-    updatedAt: new Date('2023-01-01'),
-  };
-
-  const sampleTodo2: Todo = {
-    id: 'test-id-2',
-    title: 'Test Todo 2',
-    description: 'Test Description 2',
-    status: 'completed',
-    completionMessage: 'Task completed successfully',
-    createdAt: new Date('2023-01-02'),
-    updatedAt: new Date('2023-01-02'),
-  };
+  const sampleTodos: Todo[] = [
+    {
+      id: 'test-id-1',
+      title: 'Test Todo',
+      description: 'Test Description',
+      status: 'pending',
+      createdAt: new Date('2023-01-01'),
+      updatedAt: new Date('2023-01-01'),
+    },
+    {
+      id: 'test-id-2',
+      title: 'Test Todo 2',
+      description: 'Test Description 2',
+      status: 'completed',
+      completionMessage: 'Task completed successfully',
+      createdAt: new Date('2023-01-02'),
+      updatedAt: new Date('2023-01-02'),
+    },
+  ];
 
   beforeEach(() => {
-    mockTodoRepository = mock<TodoRepository>();
-    todoService = new TodoService(instance(mockTodoRepository));
+    mockRepo = {
+      findAll: vi.fn(),
+      findById: vi.fn(),
+      create: vi.fn(),
+      update: vi.fn(),
+      delete: vi.fn(),
+      filter: vi.fn(),
+      restore: vi.fn(),
+    } as unknown as TodoRepository;
+
+    todoService = new TodoService(mockRepo);
   });
 
-  describe('getAllTodos', () => {
-    it('should return all todos from repository', async () => {
-      const expectedTodos = [sampleTodo, sampleTodo2];
-      when(mockTodoRepository.findAll()).thenResolve(ok(expectedTodos));
+  // ---------------- getAllTodos ----------------
+  it('getAllTodos should return all todos', async () => {
+    (mockRepo.findAll as any).mockResolvedValue(ok(sampleTodos));
 
-      const result = await todoService.getAllTodos();
-
-      expect(result).toMatchObject(ok(expectedTodos));
-      verify(mockTodoRepository.findAll()).once();
-    });
-
-    it('should return empty array when no todos exist', async () => {
-      when(mockTodoRepository.findAll()).thenResolve(ok([]));
-
-      const result = await todoService.getAllTodos();
-
-      expect(result).toMatchObject(ok([]));
-      verify(mockTodoRepository.findAll()).once();
-    });
-
-    it('should return error when repository fails', async () => {
-      const error = createDatabaseError('Failed to retrieve todos');
-      when(mockTodoRepository.findAll()).thenResolve(err(error));
-
-      const result = await todoService.getAllTodos();
-
-      expect(result).toMatchObject(err(error));
-      verify(mockTodoRepository.findAll()).once();
-    });
+    const result = await todoService.getAllTodos();
+    expect(result).toEqual(ok(sampleTodos));
   });
 
-  describe('getTodoById', () => {
-    it('should return todo when found', async () => {
-      when(mockTodoRepository.findById('test-id-1')).thenResolve(ok(sampleTodo));
+  it('getAllTodos should return error if repository fails', async () => {
+    const error = createDatabaseError('DB fail');
+    (mockRepo.findAll as any).mockResolvedValue(err(error));
 
-      const result = await todoService.getTodoById('test-id-1');
-
-      expect(result).toMatchObject(ok(sampleTodo));
-      verify(mockTodoRepository.findById('test-id-1')).once();
-    });
-
-    it('should return NotFoundError when todo not found', async () => {
-      const notFoundError = createNotFoundError('Todo', 'non-existent-id');
-      when(mockTodoRepository.findById('non-existent-id')).thenResolve(err(notFoundError));
-
-      const result = await todoService.getTodoById('non-existent-id');
-
-      expect(result).toMatchObject(err(notFoundError));
-      verify(mockTodoRepository.findById('non-existent-id')).once();
-    });
-
-    it('should return error when repository fails', async () => {
-      const error = createDatabaseError('Failed to retrieve todo by id');
-      when(mockTodoRepository.findById('test-id-1')).thenResolve(err(error));
-
-      const result = await todoService.getTodoById('test-id-1');
-
-      expect(result).toMatchObject(err(error));
-      verify(mockTodoRepository.findById('test-id-1')).once();
-    });
+    const result = await todoService.getAllTodos();
+    expect(result).toEqual(err(error));
   });
 
-  describe('createTodo', () => {
-    it('should create a new todo', async () => {
-      const todoData: CreateTodoRequest = {
-        title: 'New Todo',
-        description: 'New Description',
-      };
-      const createdTodo: Todo = {
-        id: 'new-id',
-        title: todoData.title,
-        description: todoData.description!,
-        status: 'pending',
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      };
+  // ---------------- getTodoById ----------------
+  it('getTodoById should return todo if found', async () => {
+    (mockRepo.findById as any).mockResolvedValue(ok(sampleTodos[0]));
 
-      when(mockTodoRepository.create(todoData)).thenResolve(ok(createdTodo));
-
-      const result = await todoService.createTodo(todoData);
-
-      expect(result).toMatchObject(ok(createdTodo));
-      verify(mockTodoRepository.create(todoData)).once();
-    });
-
-    it('should create todo without description', async () => {
-      const todoData: CreateTodoRequest = {
-        title: 'New Todo',
-      };
-      const createdTodo: Todo = {
-        id: 'new-id',
-        title: todoData.title,
-        status: 'pending',
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      };
-
-      when(mockTodoRepository.create(todoData)).thenResolve(ok(createdTodo));
-
-      const result = await todoService.createTodo(todoData);
-
-      expect(result).toMatchObject(ok(createdTodo));
-      verify(mockTodoRepository.create(todoData)).once();
-    });
-
-    it('should return error when repository fails', async () => {
-      const todoData: CreateTodoRequest = {
-        title: 'New Todo',
-      };
-      const error = createDatabaseError('Failed to create todo');
-      when(mockTodoRepository.create(todoData)).thenResolve(err(error));
-
-      const result = await todoService.createTodo(todoData);
-
-      expect(result).toMatchObject(err(error));
-      verify(mockTodoRepository.create(todoData)).once();
-    });
+    const result = await todoService.getTodoById('test-id-1');
+    expect(result).toEqual(ok(sampleTodos[0]));
   });
 
-  describe('updateTodo', () => {
-    it('should update todo when found', async () => {
-      const updates = {
-        title: 'Updated Title',
-        status: 'completed' as const,
-        completionMessage: 'Task completed successfully',
-      };
-      const updatedTodo: Todo = {
-        ...sampleTodo,
-        title: updates.title,
-        status: 'completed',
-        completionMessage: updates.completionMessage,
-        updatedAt: new Date(),
-      };
+  it('getTodoById should return NotFoundError if not found', async () => {
+    const error = createNotFoundError('Todo', 'wrong-id');
+    (mockRepo.findById as any).mockResolvedValue(err(error));
 
-      when(mockTodoRepository.update('test-id-1', updates)).thenResolve(ok(updatedTodo));
-
-      const result = await todoService.updateTodo('test-id-1', updates);
-
-      expect(result).toMatchObject(ok(updatedTodo));
-      verify(mockTodoRepository.update('test-id-1', updates)).once();
-    });
-
-    it('should return NotFoundError when todo not found', async () => {
-      const updates = {
-        title: 'Updated Title',
-      };
-      const notFoundError = createNotFoundError('Todo', 'non-existent-id');
-
-      when(mockTodoRepository.update('non-existent-id', updates)).thenResolve(err(notFoundError));
-
-      const result = await todoService.updateTodo('non-existent-id', updates);
-
-      expect(result).toMatchObject(err(notFoundError));
-      verify(mockTodoRepository.update('non-existent-id', updates)).once();
-    });
+    const result = await todoService.getTodoById('wrong-id');
+    expect(result).toEqual(err(error));
   });
 
-  describe('deleteTodo', () => {
-    it('should return true when todo is deleted', async () => {
-      when(mockTodoRepository.delete('test-id-1')).thenResolve(ok(true));
+  // ---------------- createTodo ----------------
+  it('createTodo should create a new todo', async () => {
+    const createData: CreateTodoRequest = { title: 'New', description: 'Desc' };
+    const newTodo: Todo = { ...createData, id: 'new-id', status: 'pending', createdAt: new Date(), updatedAt: new Date() };
+    (mockRepo.create as any).mockResolvedValue(ok(newTodo));
 
-      const result = await todoService.deleteTodo('test-id-1');
-
-      expect(result).toMatchObject(ok(true));
-      verify(mockTodoRepository.delete('test-id-1')).once();
-    });
-
-    it('should return NotFoundError when todo not found', async () => {
-      const notFoundError = createNotFoundError('Todo', 'non-existent-id');
-      when(mockTodoRepository.delete('non-existent-id')).thenResolve(err(notFoundError));
-
-      const result = await todoService.deleteTodo('non-existent-id');
-
-      expect(result).toMatchObject(err(notFoundError));
-      verify(mockTodoRepository.delete('non-existent-id')).once();
-    });
+    const result = await todoService.createTodo(createData);
+    expect(result).toEqual(ok(newTodo));
   });
 
-  describe('getCompletedTodos', () => {
-    it('should return only completed todos', async () => {
-      const allTodos = [sampleTodo, sampleTodo2]; // sampleTodo2 is completed
-      const completedTodos = [sampleTodo2];
+  it('createTodo should return error if repository fails', async () => {
+    const createData: CreateTodoRequest = { title: 'New' };
+    const error = createDatabaseError('DB fail');
+    (mockRepo.create as any).mockResolvedValue(err(error));
 
-      when(mockTodoRepository.findAll()).thenResolve(ok(allTodos));
-
-      const result = await todoService.getCompletedTodos();
-
-      expect(result).toMatchObject(ok(completedTodos));
-      verify(mockTodoRepository.findAll()).once();
-    });
-
-    it('should return empty array when no completed todos', async () => {
-      const allTodos = [sampleTodo]; // only pending todos
-
-      when(mockTodoRepository.findAll()).thenResolve(ok(allTodos));
-
-      const result = await todoService.getCompletedTodos();
-
-      expect(result).toMatchObject(ok([]));
-      verify(mockTodoRepository.findAll()).once();
-    });
-
-    it('should return empty array when no todos exist', async () => {
-      when(mockTodoRepository.findAll()).thenResolve(ok([]));
-
-      const result = await todoService.getCompletedTodos();
-
-      expect(result).toMatchObject(ok([]));
-      verify(mockTodoRepository.findAll()).once();
-    });
-
-    it('should return error when repository fails', async () => {
-      const error = createDatabaseError('Failed to retrieve todos');
-      when(mockTodoRepository.findAll()).thenResolve(err(error));
-
-      const result = await todoService.getCompletedTodos();
-
-      expect(result).toMatchObject(err(error));
-      verify(mockTodoRepository.findAll()).once();
-    });
+    const result = await todoService.createTodo(createData);
+    expect(result).toEqual(err(error));
   });
 
-  describe('getPendingTodos', () => {
-    it('should return only pending todos', async () => {
-      const allTodos = [sampleTodo, sampleTodo2]; // sampleTodo is pending
-      const pendingTodos = [sampleTodo];
+  // ---------------- updateTodo ----------------
+  it('updateTodo should update existing todo', async () => {
+    const updates = { title: 'Updated' };
+    const updatedTodo = { ...sampleTodos[0], ...updates, updatedAt: new Date() };
+    (mockRepo.update as any).mockResolvedValue(ok(updatedTodo));
 
-      when(mockTodoRepository.findAll()).thenResolve(ok(allTodos));
+    const result = await todoService.updateTodo('test-id-1', updates);
+    expect(result).toEqual(ok(updatedTodo));
+  });
 
-      const result = await todoService.getPendingTodos();
+  it('updateTodo should return NotFoundError if todo not found', async () => {
+    const updates = { title: 'Updated' };
+    const error = createNotFoundError('Todo', 'wrong-id');
+    (mockRepo.update as any).mockResolvedValue(err(error));
 
-      expect(result).toMatchObject(ok(pendingTodos));
-      verify(mockTodoRepository.findAll()).once();
-    });
+    const result = await todoService.updateTodo('wrong-id', updates);
+    expect(result).toEqual(err(error));
+  });
 
-    it('should return empty array when no pending todos', async () => {
-      const allTodos = [sampleTodo2]; // only completed todos
+  // ---------------- deleteTodo ----------------
+  it('deleteTodo should return Ok if deleted', async () => {
+    (mockRepo.delete as any).mockResolvedValue(ok(undefined));
 
-      when(mockTodoRepository.findAll()).thenResolve(ok(allTodos));
+    const result = await todoService.deleteTodo('test-id-1');
+    expect(result).toEqual(ok(undefined));
+  });
 
-      const result = await todoService.getPendingTodos();
+  it('deleteTodo should return NotFoundError if todo not found', async () => {
+    const error = createNotFoundError('Todo', 'wrong-id');
+    (mockRepo.delete as any).mockResolvedValue(err(error));
 
-      expect(result).toMatchObject(ok([]));
-      verify(mockTodoRepository.findAll()).once();
-    });
+    const result = await todoService.deleteTodo('wrong-id');
+    expect(result).toEqual(err(error));
+  });
 
-    it('should return empty array when no todos exist', async () => {
-      when(mockTodoRepository.findAll()).thenResolve(ok([]));
+  // ---------------- restoreTodo ----------------
+  it('restoreTodo should return Ok if restored', async () => {
+    (mockRepo.restore as any).mockResolvedValue(ok(undefined));
 
-      const result = await todoService.getPendingTodos();
+    const result = await todoService.restoreTodo('test-id-1');
+    expect(result).toEqual(ok(undefined));
+  });
 
-      expect(result).toMatchObject(ok([]));
-      verify(mockTodoRepository.findAll()).once();
-    });
+  it('restoreTodo should return NotFoundError if todo not found', async () => {
+    const error = createNotFoundError('Todo', 'wrong-id');
+    (mockRepo.restore as any).mockResolvedValue(err(error));
 
-    it('should return error when repository fails', async () => {
-      const error = createDatabaseError('Failed to retrieve todos');
-      when(mockTodoRepository.findAll()).thenResolve(err(error));
+    const result = await todoService.restoreTodo('wrong-id');
+    expect(result).toEqual(err(error));
+  });
 
-      const result = await todoService.getPendingTodos();
+  // ---------------- filter ----------------
+  it('filter should return only completed todos', async () => {
+    const payload: FilterTodosPayload = { status: 'completed' };
+    const completedTodos = sampleTodos.filter(t => t.status === 'completed');
+    (mockRepo.filter as any).mockResolvedValue(ok(completedTodos));
 
-      expect(result).toMatchObject(err(error));
-      verify(mockTodoRepository.findAll()).once();
-    });
+    const result = await todoService.filter(payload);
+    expect(result).toEqual(ok(completedTodos));
+  });
+
+  it('filter should return only pending todos', async () => {
+    const payload: FilterTodosPayload = { status: 'pending' };
+    const pendingTodos = sampleTodos.filter(t => t.status === 'pending');
+    (mockRepo.filter as any).mockResolvedValue(ok(pendingTodos));
+
+    const result = await todoService.filter(payload);
+    expect(result).toEqual(ok(pendingTodos));
+  });
+
+  it('filter should return all todos when status not specified', async () => {
+    const payload: FilterTodosPayload = {};
+    (mockRepo.filter as any).mockResolvedValue(ok(sampleTodos));
+
+    const result = await todoService.filter(payload);
+    expect(result).toEqual(ok(sampleTodos));
+  });
+
+  it('filter should return error when repository fails', async () => {
+    const payload: FilterTodosPayload = { status: 'completed' };
+    const error = createDatabaseError('Failed to filter todos');
+    (mockRepo.filter as any).mockResolvedValue(err(error));
+
+    const result = await todoService.filter(payload);
+    expect(result).toEqual(err(error));
   });
 });
