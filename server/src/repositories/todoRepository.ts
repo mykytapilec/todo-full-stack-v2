@@ -32,7 +32,7 @@ type TodoDocument =
 
 export type FilterTodosPayload = {
   query?: string;
-  status?: Exclude<TodoStatus, 'deleted'>;
+  status?: TodoStatus;
 };
 
 export class TodoRepository {
@@ -40,10 +40,6 @@ export class TodoRepository {
 
   constructor(db: Db) {
     this.collection = db.collection<TodoDocument>('todos');
-  }
-
-  private baseFilter(): Filter<TodoDocument> {
-    return { status: { $ne: 'deleted' } };
   }
 
   private documentToTodo(doc: TodoDocument): Todo {
@@ -69,7 +65,7 @@ export class TodoRepository {
   async findAll(): Promise<Result<Todo[], AppError>> {
     try {
       const docs = await this.collection
-        .find(this.baseFilter())
+        .find({ status: { $ne: 'deleted' } })
         .sort({ createdAt: -1 })
         .toArray();
 
@@ -82,8 +78,8 @@ export class TodoRepository {
   async findById(id: string): Promise<Result<Todo, AppError>> {
     try {
       const doc = await this.collection.findOne({
-        ...this.baseFilter(),
         id,
+        status: { $ne: 'deleted' },
       });
 
       if (!doc) {
@@ -167,7 +163,7 @@ export class TodoRepository {
       }
 
       const result = await this.collection.findOneAndUpdate(
-        { ...this.baseFilter(), id },
+        { id, status: { $ne: 'deleted' } },
         updateQuery,
         { returnDocument: 'after' }
       );
@@ -201,12 +197,12 @@ export class TodoRepository {
 
   async filter(payload: FilterTodosPayload): Promise<Result<Todo[], AppError>> {
     try {
-      const filter: Filter<TodoDocument> = {
-        ...this.baseFilter(),
-      };
+      const filter: Filter<TodoDocument> = {};
 
       if (payload.status) {
         filter.status = payload.status;
+      } else {
+        filter.status = { $ne: 'deleted' };
       }
 
       if (payload.query) {
@@ -224,21 +220,6 @@ export class TodoRepository {
       return ok(docs.map((d) => this.documentToTodo(d)));
     } catch (error) {
       return err(createDatabaseError('Failed to filter todos', error));
-    }
-  }
-
-  async findDeleted(): Promise<Result<Todo[], AppError>> {
-    try {
-      const docs = await this.collection
-        .find({ status: 'deleted' })
-        .sort({ updatedAt: -1 })
-        .toArray();
-
-      return ok(docs.map((d) => this.documentToTodo(d)));
-    } catch (error) {
-      return err(
-        createDatabaseError('Failed to retrieve deleted todos', error)
-      );
     }
   }
 

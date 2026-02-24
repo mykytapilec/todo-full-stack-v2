@@ -56,7 +56,7 @@
                 "properties": {
                   "status": {
                     "type": "string",
-                    "enum": ["pending", "completed"]
+                    "enum": ["pending", "completed", "deleted"]
                   },
                   "query": { "type": "string" }
                 },
@@ -68,25 +68,6 @@
         "responses": {
           "200": {
             "description": "Filtered todos",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "array",
-                  "items": { "$ref": "#/components/schemas/Todo" }
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-
-    "/api/todos/deleted": {
-      "get": {
-        "summary": "Get deleted todos",
-        "responses": {
-          "200": {
-            "description": "Deleted todos",
             "content": {
               "application/json": {
                 "schema": {
@@ -180,14 +161,7 @@
           }
         ],
         "responses": {
-          "200": {
-            "description": "Restored todo",
-            "content": {
-              "application/json": {
-                "schema": { "$ref": "#/components/schemas/Todo" }
-              }
-            }
-          },
+          "204": { "description": "Restored" },
           "404": { "description": "Not found" }
         }
       }

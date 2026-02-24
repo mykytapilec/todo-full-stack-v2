@@ -61,9 +61,6 @@ export class TodoController {
     return res.status(500).json({ error: result.error.message });
   };
 
-  /**
-   * Filter now works via status instead of completed
-   */
   filterTodos = async (req: Request, res: Response) => {
     const { status, query } = req.body ?? {};
 
@@ -137,16 +134,6 @@ export class TodoController {
 
     if (result.error.type === 'NOT_FOUND') {
       return res.status(404).json({ error: result.error.message });
-    }
-
-    return res.status(500).json({ error: result.error.message });
-  };
-
-  getDeletedTodos = async (_req: Request, res: Response) => {
-    const result = await this.todoService.getDeletedTodos();
-
-    if (result.isOk()) {
-      return res.status(200).json(this.todosToApiTodos(result.value));
     }
 
     return res.status(500).json({ error: result.error.message });

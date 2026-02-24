@@ -13,6 +13,7 @@ const TodoFilter: React.FC<TodoFilterProps> = ({
     { value: 'all', label: 'All' },
     { value: 'pending', label: 'Pending' },
     { value: 'completed', label: 'Completed' },
+    { value: 'deleted', label: 'Deleted' },
   ];
 
   return (

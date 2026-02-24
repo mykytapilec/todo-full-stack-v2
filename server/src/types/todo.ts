@@ -24,6 +24,6 @@ export interface TodoDocument {
 export interface InternalUpdateTodoRequest {
   title?: string;
   description?: string;
-  status?: Exclude<TodoStatus, 'deleted'>;
+  status?: TodoStatus;
   completionMessage?: string;
 }
