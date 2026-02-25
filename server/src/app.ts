@@ -93,10 +93,12 @@ export class TodoApplication {
       }
     );
 
-    this.app.use((err: Error, _req: Request, res: Response, _next: NextFunction) => {
-      console.error(err.stack);
-      res.status(500).json({ error: 'Something went wrong!' });
-    });
+    this.app.use(
+      (err: Error, _req: Request, res: Response, _next: NextFunction) => {
+        console.error(err.stack);
+        res.status(500).json({ error: 'Something went wrong!' });
+      }
+    );
   }
 
   public async initialize(): Promise<void> {
@@ -142,5 +144,12 @@ export class TodoApplication {
     if (this.database.isConnected()) {
       await this.database.disconnect();
     }
+  }
+
+  public getAddress(): string | null {
+    if (!this.server) return null;
+    const addressInfo = this.server.address();
+    if (!addressInfo || typeof addressInfo === 'string') return null;
+    return `http://localhost:${addressInfo.port}`;
   }
 }

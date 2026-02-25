@@ -37,6 +37,7 @@ export class TodoController {
     return todos.map((todo) => this.todoToApiTodo(todo));
   }
 
+  // GET /api/todos
   getAllTodos = async (_req: Request, res: Response) => {
     const result = await this.todoService.getAllTodos();
 
@@ -47,20 +48,21 @@ export class TodoController {
     return res.status(500).json({ error: result.error.message });
   };
 
-  getTodoById = async (req: Request, res: Response) => {
-    const result = await this.todoService.getTodoById(req.params.id);
+getTodoById = async (req: Request, res: Response) => {
+  const result = await this.todoService.getTodoById(req.params.id);
 
-    if (result.isOk()) {
-      return res.status(200).json(this.todoToApiTodo(result.value));
+  result.match(
+    (todo) => res.status(200).json(this.todoToApiTodo(todo)),
+    (error) => {
+      if (error.type === 'NOT_FOUND') {
+        return res.status(404).json({ error: error.message });
+      }
+      return res.status(500).json({ error: error.message });
     }
+  );
+};
 
-    if (result.error.type === 'NOT_FOUND') {
-      return res.status(404).json({ error: result.error.message });
-    }
-
-    return res.status(500).json({ error: result.error.message });
-  };
-
+  // POST /api/todos/filter
   filterTodos = async (req: Request, res: Response) => {
     const { status, query } = req.body ?? {};
 
@@ -76,6 +78,7 @@ export class TodoController {
     return res.status(500).json({ error: result.error.message });
   };
 
+  // POST /api/todos
   createTodo = async (req: Request, res: Response) => {
     const payload: CreateTodoRequest = req.body;
 
@@ -88,6 +91,7 @@ export class TodoController {
     return res.status(500).json({ error: result.error.message });
   };
 
+  // PUT /api/todos/:id
   updateTodo = async (req: Request, res: Response) => {
     const payload: UpdateTodoRequest = req.body;
 
@@ -119,12 +123,13 @@ export class TodoController {
     }
 
     if (result.error.type === 'NOT_FOUND') {
-      return res.status(404).json({ error: result.error.message });
+      return res.status(404).send();
     }
 
     return res.status(500).json({ error: result.error.message });
   };
 
+  // DELETE /api/todos/:id
   deleteTodo = async (req: Request, res: Response) => {
     const result = await this.todoService.deleteTodo(req.params.id);
 
@@ -133,12 +138,13 @@ export class TodoController {
     }
 
     if (result.error.type === 'NOT_FOUND') {
-      return res.status(404).json({ error: result.error.message });
+      return res.status(404).send();
     }
 
     return res.status(500).json({ error: result.error.message });
   };
 
+  // POST /api/todos/:id/restore
   restoreTodo = async (req: Request, res: Response) => {
     const result = await this.todoService.restoreTodo(req.params.id);
 
@@ -147,7 +153,7 @@ export class TodoController {
     }
 
     if (result.error.type === 'NOT_FOUND') {
-      return res.status(404).json({ error: result.error.message });
+      return res.status(404).send();
     }
 
     return res.status(500).json({ error: result.error.message });
