@@ -18,12 +18,35 @@ const TodoList: React.FC<TodoListProps> = ({ filter, searchQuery }) => {
 
   if (isLoading) return <div className="todo-list"><div className="loading">Loading todos...</div></div>;
   if (isError) return <div className="todo-list"><div className="error-message">{error instanceof Error ? error.message : 'Unknown error'}</div></div>;
-  if (!todos || todos.length === 0) return <div className="todo-list"><div className="empty-state">{isSearchMode ? 'No todos match your search.' : filter === 'all' ? 'No todos yet. Create your first todo!' : filter === 'completed' ? 'No completed todos.' : 'No pending todos.'}</div></div>;
+  if (!todos || todos.length === 0)
+    return (
+      <div className="todo-list">
+        <div className="empty-state">
+          {isSearchMode
+            ? 'No todos match your search.'
+            : filter === 'all'
+            ? 'No todos yet. Create your first todo!'
+            : filter === 'completed'
+            ? 'No completed todos.'
+            : filter === 'pending'
+            ? 'No pending todos.'
+            : 'No deleted todos.'}
+        </div>
+      </div>
+    );
 
   return (
     <div className="todo-list">
-      <div className="todo-count">{todos.length} {todos.length === 1 ? 'todo' : 'todos'}{filter !== 'all' && ` (${filter})`}{isSearchMode && ' (search)'}</div>
-      <div className="todos">{todos.map(todo => <TodoItem key={todo.id} todo={todo} />)}</div>
+      <div className="todo-count">
+        {todos.length} {todos.length === 1 ? 'todo' : 'todos'}
+        {filter !== 'all' && ` (${filter})`}
+        {isSearchMode && ' (search)'}
+      </div>
+      <div className="todos">
+        {todos.map((todo) => (
+          <TodoItem key={todo.id} todo={todo} currentFilter={filter} />
+        ))}
+      </div>
     </div>
   );
 };

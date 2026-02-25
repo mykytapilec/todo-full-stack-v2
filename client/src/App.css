@@ -296,6 +296,11 @@ body {
   background: #eff6ff;
 }
 
+.todo-item.deleted {
+  border-color: #fca5a5; 
+  background: #fee2e2;
+}
+
 .todo-content {
   display: flex;
   flex-direction: column;

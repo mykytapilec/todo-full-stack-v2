@@ -1,36 +1,17 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import {
-  CreateTodoRequest,
-  UpdateTodoRequest,
-  FilterType,
-} from '@shared/types/api';
+import { CreateTodoRequest, UpdateTodoRequest, FilterType } from '@shared/types/api';
 import { todoApi } from '../api/todoApi';
 
 const QUERY_KEYS = {
   todos: ['todos'],
   todo: (id: string) => ['todos', id],
-  filteredTodos: (query?: string, status?: FilterType) => [
-    'todos',
-    'search',
-    query ?? '',
-    status ?? 'all',
-  ],
+  filteredTodos: (query?: string, status?: FilterType) => ['todos', 'search', query ?? '', status ?? 'all'],
 };
 
-type UseFilteredTodosParams = {
-  query?: string;
-  status?: FilterType;
-};
+type UseFilteredTodosParams = { query?: string; status?: FilterType };
 
 export const useFilteredTodos = ({ query, status }: UseFilteredTodosParams) => {
   const trimmedQuery = query?.trim();
-
-  const completed =
-    status === 'completed'
-      ? true
-      : status === 'pending'
-      ? false
-      : undefined;
 
   return useQuery({
     queryKey: QUERY_KEYS.filteredTodos(trimmedQuery, status),
@@ -45,21 +26,16 @@ export const useFilteredTodos = ({ query, status }: UseFilteredTodosParams) => {
 
 export const useCreateTodo = () => {
   const queryClient = useQueryClient();
-
   return useMutation({
     mutationFn: (todo: CreateTodoRequest) => todoApi.createTodo(todo),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['todos'] });
-    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['todos'] }),
   });
 };
 
 export const useUpdateTodo = () => {
   const queryClient = useQueryClient();
-
   return useMutation({
-    mutationFn: ({ id, todo }: { id: string; todo: UpdateTodoRequest }) =>
-      todoApi.updateTodo(id, todo),
+    mutationFn: ({ id, todo }: { id: string; todo: UpdateTodoRequest }) => todoApi.updateTodo(id, todo),
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['todos'] });
       queryClient.invalidateQueries({ queryKey: ['todos', variables.id] });
@@ -69,9 +45,19 @@ export const useUpdateTodo = () => {
 
 export const useDeleteTodo = () => {
   const queryClient = useQueryClient();
-
   return useMutation({
     mutationFn: (id: string) => todoApi.deleteTodo(id),
+    onSuccess: (_, id) => {
+      queryClient.invalidateQueries({ queryKey: ['todos'] });
+      queryClient.invalidateQueries({ queryKey: ['todos', id] });
+    },
+  });
+};
+
+export const useRestoreTodo = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => todoApi.restoreTodo(id),
     onSuccess: (_, id) => {
       queryClient.invalidateQueries({ queryKey: ['todos'] });
       queryClient.invalidateQueries({ queryKey: ['todos', id] });
