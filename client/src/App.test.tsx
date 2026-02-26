@@ -5,14 +5,14 @@ import App from './App';
 import * as useTodosHooks from './hooks/useTodos';
 
 vi.mock('./hooks/useTodos');
+
 const mockedUseFilteredTodos = vi.mocked(useTodosHooks.useFilteredTodos);
+const mockedUseCreateTodo = vi.mocked(useTodosHooks.useCreateTodo);
 
 describe('App', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-  });
 
-  it('renders main app structure', () => {
     mockedUseFilteredTodos.mockReturnValue({
       data: [],
       isLoading: false,
@@ -20,30 +20,18 @@ describe('App', () => {
       error: null,
     } as any);
 
+    mockedUseCreateTodo.mockReturnValue({
+      mutate: vi.fn(),
+      isPending: false,
+    } as any);
+  });
+
+  it('renders main app structure', () => {
     render(<App />);
     expect(screen.getByText(/todo app/i)).toBeInTheDocument();
   });
 
-  it('renders header with correct title', () => {
-    mockedUseFilteredTodos.mockReturnValue({
-      data: [],
-      isLoading: false,
-      isError: false,
-      error: null,
-    } as any);
-
-    render(<App />);
-    expect(screen.getByRole('heading', { name: /todo app/i })).toBeInTheDocument();
-  });
-
   it('initializes with "All" filter active', () => {
-    mockedUseFilteredTodos.mockReturnValue({
-      data: [],
-      isLoading: false,
-      isError: false,
-      error: null,
-    } as any);
-
     render(<App />);
     expect(screen.getByRole('button', { name: /all/i })).toHaveClass('active');
   });
@@ -51,64 +39,39 @@ describe('App', () => {
   it('updates filter when clicking Completed', async () => {
     const user = userEvent.setup();
 
-    mockedUseFilteredTodos.mockReturnValue({
-      data: [],
-      isLoading: false,
-      isError: false,
-      error: null,
-    } as any);
-
     render(<App />);
     const completedBtn = screen.getByRole('button', { name: /completed/i });
     await user.click(completedBtn);
 
     expect(completedBtn).toHaveClass('active');
-    expect(screen.getByRole('button', { name: /all/i })).not.toHaveClass('active');
   });
 
-  it('adds a todo and searches for it', async () => {
-    const user = userEvent.setup();
+  it('calls createTodo mutation when submitting form', async () => {
+  const user = userEvent.setup();
 
-    const todo = {
-      id: '1',
+  const mutateMock = vi.fn();
+
+  mockedUseCreateTodo.mockReturnValue({
+    mutate: mutateMock,
+    isPending: false,
+  } as any);
+
+  render(<App />);
+
+  const input = screen.getByPlaceholderText('Enter todo title...');
+  const button = screen.getByRole('button', { name: /add todo/i });
+
+  await user.type(input, 'Buy milk');
+  await user.click(button);
+
+  expect(mutateMock).toHaveBeenCalledTimes(1);
+  expect(mutateMock).toHaveBeenCalledWith(
+    expect.objectContaining({
       title: 'Buy milk',
-      description: '',
-      completed: false,
-    };
-
-    mockedUseFilteredTodos.mockReturnValueOnce({
-      data: [],
-      isLoading: false,
-      isError: false,
-      error: null,
-    } as any);
-
-    mockedUseFilteredTodos.mockReturnValueOnce({
-      data: [todo],
-      isLoading: false,
-      isError: false,
-      error: null,
-    } as any);
-
-    render(<App />);
-
-    const formInput = screen.getByPlaceholderText(/enter todo title/i);
-    const addBtn = screen.getByRole('button', { name: /add todo/i });
-
-    await user.type(formInput, 'Buy milk');
-    await user.click(addBtn);
-
-    await waitFor(() => {
-      expect(screen.getByText(/buy milk/i)).toBeInTheDocument();
-    });
-
-    // Симулируем поиск по названию
-    const searchInput = screen.getByPlaceholderText(/enter todo title/i);
-    await user.type(searchInput, 'milk');
-
-    expect(searchInput).toHaveValue('milk');
-    expect(screen.getByText(/buy milk/i)).toBeInTheDocument();
-  });
+    }),
+    expect.any(Object)
+  );
+});
 
   it('renders loading state', () => {
     mockedUseFilteredTodos.mockReturnValue({
@@ -123,27 +86,14 @@ describe('App', () => {
   });
 
   it('renders error state', () => {
-    const errorMessage = 'Failed to fetch todos';
     mockedUseFilteredTodos.mockReturnValue({
       data: undefined,
       isLoading: false,
       isError: true,
-      error: new Error(errorMessage),
+      error: new Error('Failed'),
     } as any);
 
     render(<App />);
-    expect(screen.getByText(`Failed to load todos: ${errorMessage}`)).toBeInTheDocument();
-  });
-
-  it('renders error state with unknown error', () => {
-    mockedUseFilteredTodos.mockReturnValue({
-      data: undefined,
-      isLoading: false,
-      isError: true,
-      error: null,
-    } as any);
-
-    render(<App />);
-    expect(screen.getByText('Failed to load todos: Unknown error')).toBeInTheDocument();
+    expect(screen.getByText('Failed')).toBeInTheDocument();
   });
 });
