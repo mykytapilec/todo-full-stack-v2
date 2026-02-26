@@ -4,7 +4,7 @@ import { ApiTodo, FilterType } from '@shared/types/api';
 
 interface TodoItemProps {
   todo: ApiTodo;
-  currentFilter?: FilterType; // прокидываем текущий фильтр
+  currentFilter?: FilterType;
 }
 
 const TodoItem: React.FC<TodoItemProps> = ({ todo, currentFilter }) => {

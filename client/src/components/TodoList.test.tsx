@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { screen } from '@testing-library/react';
 import { render } from '../test/utils';
 import TodoList from './TodoList';
-import { mockTodos, mockCompletedTodos, mockPendingTodos } from '../test/mockData';
+import { mockTodos, mockCompletedTodos } from '../test/mockData';
 import * as useTodosHooks from '../hooks/useTodos';
 
 vi.mock('../hooks/useTodos');
