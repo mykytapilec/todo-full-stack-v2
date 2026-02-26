@@ -1,0 +1,94 @@
+# =========================
+# Node.js / npm
+# =========================
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Root lockfile (optional)
+package-lock.json
+
+# =========================
+# Build outputs
+# =========================
+dist/
+build/
+coverage/
+
+# =========================
+# Environment variables
+# =========================
+.env
+.env.local
+.env.development
+.env.test
+.env.production
+
+# Keep example env files
+!.env.example
+
+# =========================
+# Vite
+# =========================
+.vite/
+
+# =========================
+# Vitest / Testing
+# =========================
+coverage/
+test-results/
+
+# =========================
+# TypeScript
+# =========================
+*.tsbuildinfo
+
+# =========================
+# Logs
+# =========================
+logs/
+*.log
+
+# =========================
+# Docker
+# =========================
+docker-data/
+.mongodb-data/
+
+# =========================
+# MongoDB
+# =========================
+data/
+dump/
+
+# =========================
+# OS files
+# =========================
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+Thumbs.db
+
+# =========================
+# IDE / Editors
+# =========================
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Optional: allow shared VSCode config
+# !.vscode/extensions.json
+# !.vscode/settings.json
+
+# =========================
+# Misc
+# =========================
+.cache/
+tmp/
+temp/
+

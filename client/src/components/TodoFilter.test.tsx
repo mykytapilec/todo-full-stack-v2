@@ -3,7 +3,7 @@ import { screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { render } from '../test/utils';
 import TodoFilter from './TodoFilter';
-import { FilterType } from '../types/api';
+import { FilterType } from '@shared/types/api'
 
 describe('TodoFilter', () => {
   const mockOnFilterChange = vi.fn();

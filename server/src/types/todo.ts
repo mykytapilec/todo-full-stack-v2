@@ -1,23 +1,29 @@
-type TodoBase = {
+export type TodoStatus = 'pending' | 'completed' | 'deleted';
+
+export interface Todo {
   id: string;
   title: string;
   description?: string;
+  status: Exclude<TodoStatus, 'deleted'>;
+  completionMessage?: string;
   createdAt: Date;
   updatedAt: Date;
-};
+}
 
-export type Todo =
-  | (TodoBase & {
-      status: 'pending';
-    })
-  | (TodoBase & {
-      status: 'completed';
-      completionMessage: string;
-    });
+export interface TodoDocument {
+  _id?: any;
+  id: string;
+  title: string;
+  description?: string;
+  status: TodoStatus;
+  completionMessage?: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
 
-export type InternalUpdateTodoRequest = {
+export interface InternalUpdateTodoRequest {
   title?: string;
   description?: string;
-  status?: 'pending' | 'completed';
+  status?: TodoStatus;
   completionMessage?: string;
-};
+}

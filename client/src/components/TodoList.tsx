@@ -1,54 +1,50 @@
 import React from 'react';
-import { useTodos } from '../hooks/useTodos';
-import { FilterType } from '../types/api';
+import { FilterType } from '@shared/types/api';
 import TodoItem from './TodoItem';
+import { useFilteredTodos } from '../hooks/useTodos';
 
 interface TodoListProps {
   filter: FilterType;
+  searchQuery?: string;
 }
 
-const TodoList: React.FC<TodoListProps> = ({ filter }) => {
-  const { data: todos, isLoading, isError, error } = useTodos(filter);
+const TodoList: React.FC<TodoListProps> = ({ filter, searchQuery }) => {
+  const { data: todos, isLoading, isError, error } = useFilteredTodos({
+    query: searchQuery,
+    status: filter === 'all' ? undefined : filter,
+  });
 
-  if (isLoading) {
-    return (
-      <div className="todo-list">
-        <div className="loading">Loading todos...</div>
-      </div>
-    );
-  }
+  const isSearchMode = Boolean(searchQuery);
 
-  if (isError) {
-    return (
-      <div className="todo-list">
-        <div className="error-message">
-          Failed to load todos: {error?.message || 'Unknown error'}
-        </div>
-      </div>
-    );
-  }
-
-  if (!todos || todos.length === 0) {
+  if (isLoading) return <div className="todo-list"><div className="loading">Loading todos...</div></div>;
+  if (isError) return <div className="todo-list"><div className="error-message">{error instanceof Error ? error.message : 'Unknown error'}</div></div>;
+  if (!todos || todos.length === 0)
     return (
       <div className="todo-list">
         <div className="empty-state">
-          {filter === 'all' ? 'No todos yet. Create your first todo!' :
-           filter === 'completed' ? 'No completed todos.' :
-           'No pending todos.'}
+          {isSearchMode
+            ? 'No todos match your search.'
+            : filter === 'all'
+            ? 'No todos yet. Create your first todo!'
+            : filter === 'completed'
+            ? 'No completed todos.'
+            : filter === 'pending'
+            ? 'No pending todos.'
+            : 'No deleted todos.'}
         </div>
       </div>
     );
-  }
 
   return (
     <div className="todo-list">
       <div className="todo-count">
         {todos.length} {todos.length === 1 ? 'todo' : 'todos'}
         {filter !== 'all' && ` (${filter})`}
+        {isSearchMode && ' (search)'}
       </div>
       <div className="todos">
         {todos.map((todo) => (
-          <TodoItem key={todo.id} todo={todo} />
+          <TodoItem key={todo.id} todo={todo} currentFilter={filter} />
         ))}
       </div>
     </div>

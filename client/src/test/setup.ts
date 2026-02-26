@@ -1,20 +1,21 @@
 import '@testing-library/jest-dom';
-
-// Mock axios more comprehensively
 import { vi } from 'vitest';
 
-const mockAxiosInstance = {
+export const mockAxiosInstance = {
   get: vi.fn(),
   post: vi.fn(),
   put: vi.fn(),
   delete: vi.fn(),
 };
 
-vi.mock('axios', () => ({
-  default: {
-    create: vi.fn(() => mockAxiosInstance),
-  },
-}));
+vi.mock('axios', async () => {
+  const actual = await vi.importActual<typeof import('axios')>('axios');
 
-// Export the mock instance for use in tests
-export { mockAxiosInstance };
+  return {
+    ...actual,
+    default: {
+      ...actual.default,
+      create: vi.fn(() => mockAxiosInstance),
+    },
+  };
+});

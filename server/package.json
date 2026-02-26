@@ -36,6 +36,7 @@
     "express-openapi-validator": "^5.5.7",
     "mongodb": "^6.3.0",
     "neverthrow": "^8.2.0",
+    "node-fetch": "^3.3.2",
     "swagger-ui-express": "^5.0.1"
   },
   "devDependencies": {

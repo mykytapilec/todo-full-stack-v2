@@ -1,75 +1,99 @@
-import { describe, it, expect, vi } from 'vitest';
-import { screen } from '@testing-library/react';
+import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { render } from './test/utils';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import App from './App';
+import * as useTodosHooks from './hooks/useTodos';
 
-// Mock the child components
-vi.mock('./components/TodoForm', () => ({
-  default: () => <div data-testid="todo-form">TodoForm</div>
-}));
+vi.mock('./hooks/useTodos');
 
-vi.mock('./components/TodoFilter', () => ({
-  default: ({ currentFilter, onFilterChange }: any) => (
-    <div data-testid="todo-filter">
-      <span>Current: {currentFilter}</span>
-      <button onClick={() => onFilterChange('completed')}>Set Completed</button>
-    </div>
-  )
-}));
-
-vi.mock('./components/TodoList', () => ({
-  default: ({ filter }: any) => (
-    <div data-testid="todo-list">TodoList - Filter: {filter}</div>
-  )
-}));
+const mockedUseFilteredTodos = vi.mocked(useTodosHooks.useFilteredTodos);
+const mockedUseCreateTodo = vi.mocked(useTodosHooks.useCreateTodo);
 
 describe('App', () => {
-  it('renders the main app structure', () => {
-    render(<App />);
-    
-    expect(screen.getByText('Todo App')).toBeInTheDocument();
-    expect(screen.getByTestId('todo-form')).toBeInTheDocument();
-    expect(screen.getByTestId('todo-filter')).toBeInTheDocument();
-    expect(screen.getByTestId('todo-list')).toBeInTheDocument();
+  beforeEach(() => {
+    vi.clearAllMocks();
+
+    mockedUseFilteredTodos.mockReturnValue({
+      data: [],
+      isLoading: false,
+      isError: false,
+      error: null,
+    } as any);
+
+    mockedUseCreateTodo.mockReturnValue({
+      mutate: vi.fn(),
+      isPending: false,
+    } as any);
   });
 
-  it('renders header with correct title', () => {
+  it('renders main app structure', () => {
     render(<App />);
-    
-    const header = screen.getByRole('heading', { name: 'Todo App' });
-    expect(header).toBeInTheDocument();
+    expect(screen.getByText(/todo app/i)).toBeInTheDocument();
   });
 
-  it('initializes with "all" filter', () => {
+  it('initializes with "All" filter active', () => {
     render(<App />);
-    
-    expect(screen.getByText('Current: all')).toBeInTheDocument();
-    expect(screen.getByText('TodoList - Filter: all')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /all/i })).toHaveClass('active');
   });
 
-  it('updates filter when TodoFilter changes', async () => {
+  it('updates filter when clicking Completed', async () => {
     const user = userEvent.setup();
+
     render(<App />);
-    
-    const setCompletedButton = screen.getByText('Set Completed');
-    await user.click(setCompletedButton);
-    
-    expect(screen.getByText('Current: completed')).toBeInTheDocument();
-    expect(screen.getByText('TodoList - Filter: completed')).toBeInTheDocument();
+    const completedBtn = screen.getByRole('button', { name: /completed/i });
+    await user.click(completedBtn);
+
+    expect(completedBtn).toHaveClass('active');
   });
 
-  it('has correct app structure with classes', () => {
+  it('calls createTodo mutation when submitting form', async () => {
+  const user = userEvent.setup();
+
+  const mutateMock = vi.fn();
+
+  mockedUseCreateTodo.mockReturnValue({
+    mutate: mutateMock,
+    isPending: false,
+  } as any);
+
+  render(<App />);
+
+  const input = screen.getByPlaceholderText('Enter todo title...');
+  const button = screen.getByRole('button', { name: /add todo/i });
+
+  await user.type(input, 'Buy milk');
+  await user.click(button);
+
+  expect(mutateMock).toHaveBeenCalledTimes(1);
+  expect(mutateMock).toHaveBeenCalledWith(
+    expect.objectContaining({
+      title: 'Buy milk',
+    }),
+    expect.any(Object)
+  );
+});
+
+  it('renders loading state', () => {
+    mockedUseFilteredTodos.mockReturnValue({
+      data: undefined,
+      isLoading: true,
+      isError: false,
+      error: null,
+    } as any);
+
     render(<App />);
-    
-    const appDiv = screen.getByText('Todo App').closest('.app');
-    const headerDiv = screen.getByText('Todo App').closest('.app-header');
-    const mainDiv = screen.getByTestId('todo-form').closest('.app-main');
-    const containerDiv = screen.getByTestId('todo-form').closest('.todo-container');
-    
-    expect(appDiv).toBeInTheDocument();
-    expect(headerDiv).toBeInTheDocument();
-    expect(mainDiv).toBeInTheDocument();
-    expect(containerDiv).toBeInTheDocument();
+    expect(screen.getByText('Loading todos...')).toBeInTheDocument();
+  });
+
+  it('renders error state', () => {
+    mockedUseFilteredTodos.mockReturnValue({
+      data: undefined,
+      isLoading: false,
+      isError: true,
+      error: new Error('Failed'),
+    } as any);
+
+    render(<App />);
+    expect(screen.getByText('Failed')).toBeInTheDocument();
   });
 });

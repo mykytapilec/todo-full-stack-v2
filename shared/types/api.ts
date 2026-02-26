@@ -8,6 +8,13 @@ export type ApiTodo = {
   updatedAt: Date;
 };
 
+export type Todo = {
+  id: string
+  title: string
+  completed: boolean
+}
+
+
 export type CreateTodoRequest = {
   title: string;
   description?: string;
@@ -20,4 +27,4 @@ export type UpdateTodoRequest = {
   completionMessage?: string;
 };
 
-export type FilterType = 'all' | 'completed' | 'pending';
+export type FilterType = 'all' | 'completed' | 'pending' | 'deleted';

@@ -1,4 +1,4 @@
-import { ApiTodo } from '../types/api';
+import { ApiTodo } from '@shared/types/api'
 
 export const mockTodos: ApiTodo[] = [
   {

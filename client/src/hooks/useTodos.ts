@@ -1,79 +1,66 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { CreateTodoRequest, UpdateTodoRequest, FilterType } from '@shared/types/api';
 import { todoApi } from '../api/todoApi';
-import { CreateTodoRequest, UpdateTodoRequest, FilterType } from '../types/api';
 
-// Query keys
 const QUERY_KEYS = {
   todos: ['todos'],
-  completedTodos: ['todos', 'completed'],
-  pendingTodos: ['todos', 'pending'],
   todo: (id: string) => ['todos', id],
+  filteredTodos: (query?: string, status?: FilterType) => ['todos', 'search', query ?? '', status ?? 'all'],
 };
 
-// Get todos based on filter
-export const useTodos = (filter: FilterType = 'all') => {
+type UseFilteredTodosParams = { query?: string; status?: FilterType };
+
+export const useFilteredTodos = ({ query, status }: UseFilteredTodosParams) => {
+  const trimmedQuery = query?.trim();
+
   return useQuery({
-    queryKey: filter === 'all' ? QUERY_KEYS.todos : 
-              filter === 'completed' ? QUERY_KEYS.completedTodos : 
-              QUERY_KEYS.pendingTodos,
-    queryFn: () => {
-      switch (filter) {
-        case 'completed':
-          return todoApi.getCompletedTodos();
-        case 'pending':
-          return todoApi.getPendingTodos();
-        default:
-          return todoApi.getTodos();
-      }
-    },
+    queryKey: QUERY_KEYS.filteredTodos(trimmedQuery, status),
+    queryFn: () =>
+      todoApi.filterTodos({
+        query: trimmedQuery,
+        status: status === 'all' ? undefined : status,
+      }),
+    staleTime: 1000 * 30,
   });
 };
 
-// Get single todo
-export const useTodo = (id: string) => {
-  return useQuery({
-    queryKey: QUERY_KEYS.todo(id),
-    queryFn: () => todoApi.getTodoById(id),
-    enabled: !!id,
-  });
-};
-
-// Create todo mutation
 export const useCreateTodo = () => {
   const queryClient = useQueryClient();
-
   return useMutation({
     mutationFn: (todo: CreateTodoRequest) => todoApi.createTodo(todo),
-    onSuccess: () => {
-      // Invalidate and refetch all todos queries
-      queryClient.invalidateQueries({ queryKey: ['todos'] });
-    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['todos'] }),
   });
 };
 
-// Update todo mutation
 export const useUpdateTodo = () => {
   const queryClient = useQueryClient();
-
   return useMutation({
-    mutationFn: ({ id, todo }: { id: string; todo: UpdateTodoRequest }) =>
-      todoApi.updateTodo(id, todo),
-    onSuccess: () => {
-      // Invalidate and refetch all todos queries
+    mutationFn: ({ id, todo }: { id: string; todo: UpdateTodoRequest }) => todoApi.updateTodo(id, todo),
+    onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['todos'] });
+      queryClient.invalidateQueries({ queryKey: ['todos', variables.id] });
     },
   });
 };
 
-// Delete todo mutation
 export const useDeleteTodo = () => {
   const queryClient = useQueryClient();
-
   return useMutation({
     mutationFn: (id: string) => todoApi.deleteTodo(id),
-    onSuccess: () => {
-      // Invalidate and refetch all todos queries
+    onSuccess: (_, id) => {
       queryClient.invalidateQueries({ queryKey: ['todos'] });
+      queryClient.invalidateQueries({ queryKey: ['todos', id] });
+    },
+  });
+};
+
+export const useRestoreTodo = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => todoApi.restoreTodo(id),
+    onSuccess: (_, id) => {
+      queryClient.invalidateQueries({ queryKey: ['todos'] });
+      queryClient.invalidateQueries({ queryKey: ['todos', id] });
     },
   });
 };
