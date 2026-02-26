@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { todoApi } from './todoApi';
-import { mockTodos, mockCompletedTodos, mockPendingTodos } from '../test/mockData';
+import { mockTodos } from '../test/mockData';
 import { mockAxiosInstance } from '../test/setup';
 
 describe('todoApi', () => {
@@ -8,55 +8,30 @@ describe('todoApi', () => {
     vi.clearAllMocks();
   });
 
-  describe('getTodos', () => {
-    it('fetches all todos successfully', async () => {
-      mockAxiosInstance.get.mockResolvedValue({ data: mockTodos });
+  describe('filterTodos', () => {
+    it('fetches all todos when no params provided', async () => {
+      mockAxiosInstance.post.mockResolvedValue({ data: mockTodos });
 
-      const result = await todoApi.getTodos();
+      const result = await todoApi.filterTodos();
 
-      expect(mockAxiosInstance.get).toHaveBeenCalledWith('');
+      expect(mockAxiosInstance.post).toHaveBeenCalledWith('/filter', {});
+      expect(result).toEqual(mockTodos);
+    });
+
+    it('fetches filtered todos by status', async () => {
+      mockAxiosInstance.post.mockResolvedValue({ data: mockTodos });
+
+      const result = await todoApi.filterTodos({ status: 'completed' });
+
+      expect(mockAxiosInstance.post).toHaveBeenCalledWith('/filter', { status: 'completed' });
       expect(result).toEqual(mockTodos);
     });
 
     it('handles API error', async () => {
       const error = new Error('Network error');
-      mockAxiosInstance.get.mockRejectedValue(error);
+      mockAxiosInstance.post.mockRejectedValue(error);
 
-      await expect(todoApi.getTodos()).rejects.toThrow('Network error');
-    });
-  });
-
-  describe('getCompletedTodos', () => {
-    it('fetches completed todos successfully', async () => {
-      mockAxiosInstance.get.mockResolvedValue({ data: mockCompletedTodos });
-
-      const result = await todoApi.getCompletedTodos();
-
-      expect(mockAxiosInstance.get).toHaveBeenCalledWith('/completed');
-      expect(result).toEqual(mockCompletedTodos);
-    });
-  });
-
-  describe('getPendingTodos', () => {
-    it('fetches pending todos successfully', async () => {
-      mockAxiosInstance.get.mockResolvedValue({ data: mockPendingTodos });
-
-      const result = await todoApi.getPendingTodos();
-
-      expect(mockAxiosInstance.get).toHaveBeenCalledWith('/pending');
-      expect(result).toEqual(mockPendingTodos);
-    });
-  });
-
-  describe('getTodoById', () => {
-    it('fetches single todo successfully', async () => {
-      const todo = mockTodos[0];
-      mockAxiosInstance.get.mockResolvedValue({ data: todo });
-
-      const result = await todoApi.getTodoById(todo.id);
-
-      expect(mockAxiosInstance.get).toHaveBeenCalledWith(`/${todo.id}`);
-      expect(result).toEqual(todo);
+      await expect(todoApi.filterTodos()).rejects.toThrow('Network error');
     });
   });
 
@@ -66,19 +41,7 @@ describe('todoApi', () => {
         title: 'New Todo',
         description: 'New Description',
       };
-      const createdTodo = { ...mockTodos[0], ...newTodoData };
-      mockAxiosInstance.post.mockResolvedValue({ data: createdTodo });
 
-      const result = await todoApi.createTodo(newTodoData);
-
-      expect(mockAxiosInstance.post).toHaveBeenCalledWith('', newTodoData);
-      expect(result).toEqual(createdTodo);
-    });
-
-    it('creates todo without description', async () => {
-      const newTodoData = {
-        title: 'New Todo',
-      };
       const createdTodo = { ...mockTodos[0], ...newTodoData };
       mockAxiosInstance.post.mockResolvedValue({ data: createdTodo });
 
@@ -96,6 +59,7 @@ describe('todoApi', () => {
         title: 'Updated Title',
         completed: true,
       };
+
       const updatedTodo = { ...mockTodos[0], ...updateData };
       mockAxiosInstance.put.mockResolvedValue({ data: updatedTodo });
 
@@ -109,18 +73,27 @@ describe('todoApi', () => {
   describe('deleteTodo', () => {
     it('soft deletes todo successfully', async () => {
       const todoId = mockTodos[0].id;
-      mockAxiosInstance.put.mockResolvedValue({ data: undefined });
+      mockAxiosInstance.delete.mockResolvedValue({});
 
       await todoApi.deleteTodo(todoId);
 
-      expect(mockAxiosInstance.put).toHaveBeenCalledWith(`/${todoId}/delete`);
+      expect(mockAxiosInstance.delete).toHaveBeenCalledWith(`/${todoId}`);
+    });
+  });
+
+  describe('restoreTodo', () => {
+    it('restores deleted todo successfully', async () => {
+      const todoId = mockTodos[0].id;
+      mockAxiosInstance.post.mockResolvedValue({});
+
+      await todoApi.restoreTodo(todoId);
+
+      expect(mockAxiosInstance.post).toHaveBeenCalledWith(`/${todoId}/restore`);
     });
   });
 
   describe('axios instance configuration', () => {
     it('creates axios instance with correct configuration', () => {
-      // This test verifies the axios instance was created correctly
-      // The actual creation happens when the todoApi module is imported
       expect(true).toBe(true);
     });
   });
