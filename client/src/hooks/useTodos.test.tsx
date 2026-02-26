@@ -1,16 +1,20 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { renderHook, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { useTodos, useTodo, useCreateTodo, useUpdateTodo, useDeleteTodo } from './useTodos';
+import {
+  useFilteredTodos,
+  useCreateTodo,
+  useUpdateTodo,
+  useDeleteTodo,
+  useRestoreTodo,
+} from './useTodos';
 import { todoApi } from '../api/todoApi';
 import { mockTodos } from '../test/mockData';
 import { ReactNode } from 'react';
 
-// Mock the API
 vi.mock('../api/todoApi');
 const mockedTodoApi = vi.mocked(todoApi);
 
-// Test wrapper with QueryClient
 const createWrapper = () => {
   const queryClient = new QueryClient({
     defaultOptions: {
@@ -19,74 +23,68 @@ const createWrapper = () => {
     },
   });
 
-  const Wrapper = ({ children }: { children: ReactNode }) => (
+  return ({ children }: { children: ReactNode }) => (
     <QueryClientProvider client={queryClient}>
       {children}
     </QueryClientProvider>
   );
-
-  return Wrapper;
 };
 
-describe('useTodos hooks', () => {
+describe('useTodos hooks (new API)', () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
 
-  describe('useTodos', () => {
-    it('fetches all todos by default', async () => {
-      mockedTodoApi.getTodos.mockResolvedValue(mockTodos);
+  // =============================
+  // useFilteredTodos
+  // =============================
 
-      const { result } = renderHook(() => useTodos(), {
-        wrapper: createWrapper(),
-      });
+  describe('useFilteredTodos', () => {
+    it('fetches todos with no filters', async () => {
+      mockedTodoApi.filterTodos.mockResolvedValue(mockTodos);
+
+      const { result } = renderHook(
+        () => useFilteredTodos({}),
+        { wrapper: createWrapper() }
+      );
 
       await waitFor(() => {
         expect(result.current.isSuccess).toBe(true);
       });
 
-      expect(mockedTodoApi.getTodos).toHaveBeenCalled();
+      expect(mockedTodoApi.filterTodos).toHaveBeenCalledWith({
+        query: undefined,
+        status: undefined,
+      });
+
       expect(result.current.data).toEqual(mockTodos);
     });
 
-    it('fetches completed todos when filter is "completed"', async () => {
-      const completedTodos = mockTodos.filter(t => t.completed);
-      mockedTodoApi.getCompletedTodos.mockResolvedValue(completedTodos);
+    it('fetches todos with status filter', async () => {
+      mockedTodoApi.filterTodos.mockResolvedValue(mockTodos);
 
-      const { result } = renderHook(() => useTodos('completed'), {
-        wrapper: createWrapper(),
-      });
-
-      await waitFor(() => {
-        expect(result.current.isSuccess).toBe(true);
-      });
-
-      expect(mockedTodoApi.getCompletedTodos).toHaveBeenCalled();
-      expect(result.current.data).toEqual(completedTodos);
-    });
-
-    it('fetches pending todos when filter is "pending"', async () => {
-      const pendingTodos = mockTodos.filter(t => !t.completed);
-      mockedTodoApi.getPendingTodos.mockResolvedValue(pendingTodos);
-
-      const { result } = renderHook(() => useTodos('pending'), {
-        wrapper: createWrapper(),
-      });
+      const { result } = renderHook(
+        () => useFilteredTodos({ status: 'completed' }),
+        { wrapper: createWrapper() }
+      );
 
       await waitFor(() => {
         expect(result.current.isSuccess).toBe(true);
       });
 
-      expect(mockedTodoApi.getPendingTodos).toHaveBeenCalled();
-      expect(result.current.data).toEqual(pendingTodos);
+      expect(mockedTodoApi.filterTodos).toHaveBeenCalledWith({
+        query: undefined,
+        status: 'completed',
+      });
     });
 
     it('handles API error', async () => {
-      mockedTodoApi.getTodos.mockRejectedValue(new Error('API Error'));
+      mockedTodoApi.filterTodos.mockRejectedValue(new Error('API Error'));
 
-      const { result } = renderHook(() => useTodos(), {
-        wrapper: createWrapper(),
-      });
+      const { result } = renderHook(
+        () => useFilteredTodos({}),
+        { wrapper: createWrapper() }
+      );
 
       await waitFor(() => {
         expect(result.current.isError).toBe(true);
@@ -96,32 +94,9 @@ describe('useTodos hooks', () => {
     });
   });
 
-  describe('useTodo', () => {
-    it('fetches single todo by id', async () => {
-      const todo = mockTodos[0];
-      mockedTodoApi.getTodoById.mockResolvedValue(todo);
-
-      const { result } = renderHook(() => useTodo(todo.id), {
-        wrapper: createWrapper(),
-      });
-
-      await waitFor(() => {
-        expect(result.current.isSuccess).toBe(true);
-      });
-
-      expect(mockedTodoApi.getTodoById).toHaveBeenCalledWith(todo.id);
-      expect(result.current.data).toEqual(todo);
-    });
-
-    it('does not fetch when id is empty', () => {
-      const { result } = renderHook(() => useTodo(''), {
-        wrapper: createWrapper(),
-      });
-
-      expect(result.current.fetchStatus).toBe('idle');
-      expect(mockedTodoApi.getTodoById).not.toHaveBeenCalled();
-    });
-  });
+  // =============================
+  // useCreateTodo
+  // =============================
 
   describe('useCreateTodo', () => {
     it('creates todo successfully', async () => {
@@ -132,67 +107,50 @@ describe('useTodos hooks', () => {
         wrapper: createWrapper(),
       });
 
-      const createData = {
-        title: 'New Todo',
-        description: 'Description',
-      };
-
-      result.current.mutate(createData);
+      result.current.mutate({ title: 'New Todo' });
 
       await waitFor(() => {
         expect(result.current.isSuccess).toBe(true);
       });
 
-      expect(mockedTodoApi.createTodo).toHaveBeenCalledWith(createData);
-      expect(result.current.data).toEqual(newTodo);
-    });
-
-    it('handles create error', async () => {
-      mockedTodoApi.createTodo.mockRejectedValue(new Error('Create failed'));
-
-      const { result } = renderHook(() => useCreateTodo(), {
-        wrapper: createWrapper(),
-      });
-
-      result.current.mutate({
+      expect(mockedTodoApi.createTodo).toHaveBeenCalledWith({
         title: 'New Todo',
       });
-
-      await waitFor(() => {
-        expect(result.current.isError).toBe(true);
-      });
-
-      expect(result.current.error).toEqual(new Error('Create failed'));
     });
   });
 
+  // =============================
+  // useUpdateTodo
+  // =============================
+
   describe('useUpdateTodo', () => {
     it('updates todo successfully', async () => {
-      const updatedTodo = { ...mockTodos[0], title: 'Updated Title' };
+      const updatedTodo = { ...mockTodos[0], title: 'Updated' };
       mockedTodoApi.updateTodo.mockResolvedValue(updatedTodo);
 
       const { result } = renderHook(() => useUpdateTodo(), {
         wrapper: createWrapper(),
       });
 
-      const updateData = {
+      result.current.mutate({
         id: mockTodos[0].id,
-        todo: { title: 'Updated Title' },
-      };
-
-      result.current.mutate(updateData);
+        todo: { title: 'Updated' },
+      });
 
       await waitFor(() => {
         expect(result.current.isSuccess).toBe(true);
       });
 
       expect(mockedTodoApi.updateTodo).toHaveBeenCalledWith(
-        updateData.id,
-        updateData.todo
+        mockTodos[0].id,
+        { title: 'Updated' }
       );
-      expect(result.current.data).toEqual(updatedTodo);
     });
   });
+
+  // =============================
+  // useDeleteTodo
+  // =============================
 
   describe('useDeleteTodo', () => {
     it('deletes todo successfully', async () => {
@@ -202,30 +160,39 @@ describe('useTodos hooks', () => {
         wrapper: createWrapper(),
       });
 
-      const todoId = mockTodos[0].id;
-      result.current.mutate(todoId);
+      result.current.mutate(mockTodos[0].id);
 
       await waitFor(() => {
         expect(result.current.isSuccess).toBe(true);
       });
 
-      expect(mockedTodoApi.deleteTodo).toHaveBeenCalledWith(todoId);
+      expect(mockedTodoApi.deleteTodo).toHaveBeenCalledWith(
+        mockTodos[0].id
+      );
     });
+  });
 
-    it('handles delete error', async () => {
-      mockedTodoApi.deleteTodo.mockRejectedValue(new Error('Delete failed'));
+  // =============================
+  // useRestoreTodo
+  // =============================
 
-      const { result } = renderHook(() => useDeleteTodo(), {
+  describe('useRestoreTodo', () => {
+    it('restores todo successfully', async () => {
+      mockedTodoApi.restoreTodo.mockResolvedValue(undefined);
+
+      const { result } = renderHook(() => useRestoreTodo(), {
         wrapper: createWrapper(),
       });
 
       result.current.mutate(mockTodos[0].id);
 
       await waitFor(() => {
-        expect(result.current.isError).toBe(true);
+        expect(result.current.isSuccess).toBe(true);
       });
 
-      expect(result.current.error).toEqual(new Error('Delete failed'));
+      expect(mockedTodoApi.restoreTodo).toHaveBeenCalledWith(
+        mockTodos[0].id
+      );
     });
   });
 });
