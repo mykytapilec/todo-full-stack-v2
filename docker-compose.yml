@@ -22,5 +22,15 @@ services:
     depends_on:
       - mongodb
 
+  frontend:
+    build:
+      context: .
+      dockerfile: client/Dockerfile
+    container_name: todo-frontend
+    ports:
+      - "3000:80"
+    depends_on:
+      - backend
+
 volumes:
   mongo-data:

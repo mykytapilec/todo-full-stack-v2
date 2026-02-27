@@ -1,0 +1,18 @@
+# Node modules
+node_modules
+npm-debug.log
+yarn.lock
+package-lock.json
+
+# Build outputs
+dist
+coverage
+.vite
+
+# Test files
+*.test.tsx
+*.test.ts
+
+# Local env
+.env
+.DS_Store
