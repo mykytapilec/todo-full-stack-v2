@@ -1,17 +1,35 @@
-# Simplified Dockerfile - expects pre-built application
-FROM node:22
+# ---------- Build Stage ----------
+FROM node:22 AS builder
 
-# Create app directory
 WORKDIR /app
 
-# Expose port
-EXPOSE 3000
+# Copy all files to the container
+COPY . .
 
-# Health check
-HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
-  CMD node -e "require('http').get('http://localhost:3000/health', (res) => { \
-    process.exit(res.statusCode === 200 ? 0 : 1) \
-  }).on('error', () => process.exit(1))"
+# Go to server directory
+WORKDIR /app/server
 
-# Start the application
-CMD ["node", "dist/src/index.js"]
+# Install dependencies
+RUN npm install
+
+# Build the server
+RUN npm run build
+
+
+# ---------- Production Stage ----------
+FROM node:22-slim
+
+WORKDIR /app
+
+# Copy package.json and package-lock.json
+COPY --from=builder /app/server/package*.json ./
+
+# Install prod deps
+RUN npm install --omit=dev
+
+# Copy dist
+COPY --from=builder /app/server/dist ./dist
+
+EXPOSE 8080
+
+CMD ["node", "dist/server/src/index.js"]
