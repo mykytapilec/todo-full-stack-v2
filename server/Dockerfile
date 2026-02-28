@@ -1,34 +1,27 @@
-# ---------- Build Stage ----------
-FROM node:22 AS builder
-
+# -------- Stage 1: Build --------
+FROM node:22-slim AS builder
 WORKDIR /app
 
-# Copy all files to the container
-COPY . .
-
-# Go to server directory
+COPY server/package*.json ./server/
 WORKDIR /app/server
-
-# Install dependencies
 RUN npm install
 
-# Build the server
+WORKDIR /app
+COPY . .
+
+WORKDIR /app/server
 RUN npm run build
 
 
-# ---------- Production Stage ----------
 FROM node:22-slim
-
 WORKDIR /app
 
-# Copy package.json and package-lock.json
+RUN apt-get update && apt-get install -y curl && rm -rf /var/lib/apt/lists/*
+
+COPY --from=builder /app/server/dist ./dist
 COPY --from=builder /app/server/package*.json ./
 
-# Install prod deps
 RUN npm install --omit=dev
-
-# Copy dist
-COPY --from=builder /app/server/dist ./dist
 
 EXPOSE 8080
 
