@@ -70,7 +70,7 @@ export class TodoApplication {
       })
     );
 
-    console.log('API documentation available at /api-docs');
+    console.log('API documentation available at /api-docs2');
 
     this.app.get('/health', (_req: Request, res: Response) => {
       res.json({ status: 'OK', timestamp: new Date().toISOString() });
