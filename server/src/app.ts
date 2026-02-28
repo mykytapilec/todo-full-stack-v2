@@ -5,6 +5,7 @@ import { Server } from 'http';
 import swaggerUi from 'swagger-ui-express';
 import { Database } from './config/database';
 import { createTodoRoutes } from './routes/todoRoutes';
+import healthRoutes from './routes/healthRoutes';
 import { TodoController } from './controllers/todoController';
 import { TodoService } from './services/todoService';
 import { TodoRepository } from './repositories/todoRepository';
@@ -54,6 +55,8 @@ export class TodoApplication {
     const todoController = new TodoController(todoService);
 
     const todoRoutes = createTodoRoutes(todoController);
+
+    this.app.use('/', healthRoutes);
 
     this.app.use('/api/todos', todoRoutes);
 
