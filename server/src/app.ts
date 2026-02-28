@@ -32,6 +32,13 @@ export class TodoApplication {
 
     this.app.use(express.json());
 
+    this.app.get('/health', (_req: Request, res: Response) => {
+      res.status(200).json({
+        status: 'ok',
+        timestamp: new Date().toISOString(),
+      });
+    });
+
     this.app.use(
       OpenApiValidator.middleware({
         apiSpec: apiDocs as any,
@@ -55,8 +62,6 @@ export class TodoApplication {
     const todoController = new TodoController(todoService);
 
     const todoRoutes = createTodoRoutes(todoController);
-
-    this.app.use('/', healthRoutes);
 
     this.app.use('/api/todos', todoRoutes);
 
